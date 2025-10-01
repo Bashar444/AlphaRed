@@ -73,7 +73,7 @@ export const AuthPage = () => {
             last_name: validatedData.lastName,
             username: validatedData.username,
           },
-          emailRedirectTo: `${window.location.origin}/`,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
