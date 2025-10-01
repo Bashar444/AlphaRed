@@ -12,6 +12,9 @@ export const useAuth = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setLoading(false);
+      if (session?.user) {
+        ensureProfile(session.user).catch(() => {});
+      }
     });
 
     // Listen for auth changes
@@ -20,6 +23,9 @@ export const useAuth = () => {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       setLoading(false);
+      if (session?.user) {
+        ensureProfile(session.user).catch(() => {});
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -27,3 +33,25 @@ export const useAuth = () => {
 
   return { user, loading };
 };
+
+async function ensureProfile(user: User): Promise<void> {
+  // Try to fetch profile
+  const { data: existing } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', user.id)
+    .single();
+
+  if (!existing) {
+    await supabase
+      .from('profiles')
+      .insert({
+        id: user.id,
+        email: user.email,
+        username: user.user_metadata?.username || user.email?.split('@')[0] || null,
+        first_name: user.user_metadata?.first_name || null,
+        last_name: user.user_metadata?.last_name || null,
+        avatar_url: user.user_metadata?.avatar_url || null,
+      });
+  }
+}
