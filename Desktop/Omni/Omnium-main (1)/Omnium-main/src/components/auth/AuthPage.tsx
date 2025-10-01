@@ -64,6 +64,8 @@ export const AuthPage = () => {
 
       logSecurityEvent('signup_attempt', { email: validatedData.email });
 
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '');
+
       const { error } = await supabase.auth.signUp({
         email: validatedData.email,
         password: validatedData.password,
@@ -73,7 +75,7 @@ export const AuthPage = () => {
             last_name: validatedData.lastName,
             username: validatedData.username,
           },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `${siteUrl}/auth/callback`,
         },
       });
 

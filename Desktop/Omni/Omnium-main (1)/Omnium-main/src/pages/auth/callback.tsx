@@ -29,7 +29,11 @@ export default function AuthCallback() {
         setMessage('Your email has been confirmed. You are now signed in!')
       } catch (e: any) {
         setStatus('error')
-        setMessage(e?.message || 'There was a problem confirming your email.')
+        const desc = new URLSearchParams(window.location.hash.replace('#', '')).get('error_description')
+          || new URLSearchParams(window.location.search).get('error_description')
+          || e?.message
+          || 'There was a problem confirming your email.'
+        setMessage(desc)
       }
     }
 
