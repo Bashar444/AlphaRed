@@ -118,7 +118,32 @@ export const PostCard = ({ post }: PostCardProps) => {
       </CardHeader>
       
       <CardContent className="space-y-4">
-        <p className="text-gray-900 whitespace-pre-wrap">{post.content}</p>
+        {/* naive media rendering: if content contains a public URL at the end, show it */}
+        {(() => {
+          const urlMatch = post.content.match(/https?:[^\s]+$/);
+          if (urlMatch) {
+            const mediaUrl = urlMatch[0];
+            if (mediaUrl.match(/\.(mp4|webm|ogg)(\?.*)?$/i)) {
+              return (
+                <div className="rounded-md overflow-hidden border">
+                  <video src={mediaUrl} controls className="w-full max-h-[600px]" />
+                </div>
+              );
+            }
+            if (mediaUrl.match(/\.(png|jpg|jpeg|gif|webp|avif)(\?.*)?$/i)) {
+              return (
+                <div className="rounded-md overflow-hidden border">
+                  <img src={mediaUrl} alt="post media" className="w-full max-h-[600px] object-contain" />
+                </div>
+              );
+            }
+          }
+          return null;
+        })()}
+        <p className="text-gray-900 whitespace-pre-wrap">
+          {/* show text without the trailing media url if present */}
+          {post.content.replace(/\n?https?:[^\s]+$/,'')}
+        </p>
         
         <div className="flex items-center justify-between pt-4 border-t">
           <div className="flex space-x-4">
