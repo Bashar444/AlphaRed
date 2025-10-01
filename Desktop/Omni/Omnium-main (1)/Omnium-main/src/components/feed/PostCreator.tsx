@@ -24,6 +24,7 @@ export const PostCreator = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const docInputRef = useRef<HTMLInputElement | null>(null);
 
   const remaining = useMemo(() => 5000 - content.length, [content.length]);
   const isOverLimit = remaining < 0;
@@ -106,7 +107,13 @@ export const PostCreator = () => {
     
     createPostMutation.mutate({
       content: content.trim(),
-      content_type: selectedFile ? (selectedFile.type.startsWith('video') ? 'video' : 'image') : 'text',
+      content_type: selectedFile
+        ? (selectedFile.type.startsWith('video')
+            ? 'video'
+            : selectedFile.type.startsWith('image')
+              ? 'image'
+              : 'document')
+        : 'text',
     });
   };
 
@@ -166,11 +173,36 @@ export const PostCreator = () => {
                     <Image className="h-4 w-4 mr-2" />
                     Photo/Video
                   </Button>
-                  <Button type="button" variant="ghost" size="sm">
+                  <input
+                    ref={docInputRef}
+                    className="hidden"
+                    type="file"
+                    accept="application/pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0] || null;
+                      setSelectedFile(f);
+                      setPreviewUrl(null); // no preview for docs here
+                    }}
+                  />
+                  <Button type="button" variant="ghost" size="sm" onClick={() => docInputRef.current?.click()}>
                     <FileText className="h-4 w-4 mr-2" />
                     Document
                   </Button>
-                  <Button type="button" variant="ghost" size="sm">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      const url = window.prompt('Paste a link URL');
+                      if (!url) return;
+                      try {
+                        const valid = new URL(url);
+                        setContent((c) => (c ? c + '\n' + valid.toString() : valid.toString()));
+                      } catch (_) {
+                        toast({ title: 'Invalid URL', description: 'Please enter a valid link.', variant: 'destructive' });
+                      }
+                    }}
+                  >
                     <LinkIcon className="h-4 w-4 mr-2" />
                     Link
                   </Button>

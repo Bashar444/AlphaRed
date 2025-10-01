@@ -137,6 +137,12 @@ export const PostCard = ({ post }: PostCardProps) => {
                 </div>
               );
             }
+            // For non-media links (documents), show a simple link chip
+            return (
+              <a href={mediaUrl} target="_blank" rel="noreferrer" className="inline-flex items-center px-3 py-2 text-sm rounded-md bg-gray-100 hover:bg-gray-200">
+                View attachment
+              </a>
+            );
           }
           return null;
         })()}
