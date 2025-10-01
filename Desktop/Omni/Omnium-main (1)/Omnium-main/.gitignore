@@ -1,0 +1,44 @@
+# Node
+node_modules/
+.npm/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Builds
+.next/
+.next-standalone/
+.next/static/
+out/
+dist/
+build/
+
+# Env
+.env*
+!.env.example
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Coverage / Test
+coverage/
+.jest/
+
+# Cache
+.cache/
+.eslintcache
+.next/cache/
+
+# Misc
+bun.lockb
+**/.turbo/
+.vercel/
