@@ -41,7 +41,8 @@ export default function MessagesPage() {
   const send = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || !peerId || !text.trim()) return
-    await supabase.from('messages').insert({ sender_id: user.id, receiver_id: peerId, body: text.trim() })
+    const sb: any = supabase
+    await sb.from('messages').insert([{ sender_id: user.id, receiver_id: peerId, body: text.trim() }] as any)
     setText('')
   }
 
