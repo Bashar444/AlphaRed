@@ -14,10 +14,13 @@ import {
   MapPin,
   Building
 } from 'lucide-react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 export const NetworkPage = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const handleImport = async (file: File) => {
     const text = await file.text();
     const lines = text.split(/\r?\n/).filter(Boolean);
@@ -109,6 +112,62 @@ export const NetworkPage = () => {
         .insert({ follower_id: user.id, following_id: targetId, status: 'pending' });
       if (error) throw error;
     },
+    onSuccess: () => {
+      toast({ title: 'Request sent', description: 'Connection request sent.' });
+      queryClient.invalidateQueries({ queryKey: ['connection-requests'] });
+    },
+    onError: () => toast({ title: 'Failed', description: 'Could not send request.', variant: 'destructive' }),
+  });
+
+  // Pending requests for me to accept/ignore
+  const { data: incoming } = useQuery({
+    queryKey: ['connection-requests'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('connections')
+        .select('*')
+        .eq('following_id', user.id)
+        .eq('status', 'pending');
+      if (error) throw error;
+      if (!data?.length) return [];
+      const followerIds = data.map((c: any) => c.follower_id);
+      const { data: profs } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('id', followerIds);
+      return data.map((c: any) => ({ ...c, follower: profs?.find((p: any) => p.id === c.follower_id) }));
+    },
+  });
+
+  const acceptMutation = useMutation({
+    mutationFn: async (connectionId: number) => {
+      const { error } = await supabase
+        .from('connections')
+        .update({ status: 'accepted' })
+        .eq('id', connectionId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: 'Connected' });
+      queryClient.invalidateQueries({ queryKey: ['connections'] });
+      queryClient.invalidateQueries({ queryKey: ['connection-requests'] });
+    },
+  });
+
+  const ignoreMutation = useMutation({
+    mutationFn: async (connectionId: number) => {
+      const { error } = await supabase
+        .from('connections')
+        .delete()
+        .eq('id', connectionId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: 'Request ignored' });
+      queryClient.invalidateQueries({ queryKey: ['connection-requests'] });
+    },
   });
 
   return (
@@ -161,7 +220,7 @@ export const NetworkPage = () => {
                       <p className="text-sm text-gray-600 truncate">{person.title}</p>
                       <p className="text-xs text-gray-500 truncate">{person.company}</p>
                       <div className="flex space-x-2 mt-2">
-                        <Button size="sm" onClick={() => connectMutation.mutate(person.id)}>
+                        <Button size="sm" onClick={() => connectMutation.mutate(person.id)} disabled={connectMutation.isPending}>
                           <UserPlus className="h-3 w-3 mr-1" />
                           Connect
                         </Button>
@@ -172,6 +231,36 @@ export const NetworkPage = () => {
                     </div>
                   </div>
                 ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Pending Requests</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {incoming?.length ? incoming.map((req: any) => (
+                  <div key={req.id} className="flex items-center justify-between p-3 border rounded-md">
+                    <div className="flex items-center space-x-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={req.follower?.avatar_url} />
+                        <AvatarFallback>
+                          {req.follower?.first_name?.[0]}{req.follower?.last_name?.[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">{req.follower?.first_name} {req.follower?.last_name}</p>
+                        <p className="text-sm text-gray-500">{req.follower?.title}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => acceptMutation.mutate(req.id)}>Accept</Button>
+                      <Button size="sm" variant="outline" onClick={() => ignoreMutation.mutate(req.id)}>Ignore</Button>
+                    </div>
+                  </div>
+                )) : <p className="text-gray-500 text-sm">No pending requests.</p>}
               </div>
             </CardContent>
           </Card>
