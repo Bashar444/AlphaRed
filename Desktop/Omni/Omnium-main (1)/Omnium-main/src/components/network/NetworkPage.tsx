@@ -14,7 +14,7 @@ import {
   MapPin,
   Building
 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 export const NetworkPage = () => {
@@ -64,15 +64,59 @@ export const NetworkPage = () => {
     },
   });
 
+  const connectMutation = useMutation({
+    mutationFn: async (targetId: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+      const { error } = await supabase
+        .from('connections')
+        .insert({ follower_id: user.id, following_id: targetId, status: 'pending' });
+      if (error) throw error;
+    },
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">My Network</h1>
-        <Button>
+        <Button onClick={() => document.getElementById('import-contacts-input')?.click()}>
           <Users className="h-4 w-4 mr-2" />
           Import Contacts
         </Button>
       </div>
+      <input id="import-contacts-input" type="file" accept="text/csv" className="hidden" onChange={async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const text = await file.text();
+        // naive CSV parse: expects header with email,first_name,last_name
+        const lines = text.split(/\r?\n/).filter(Boolean);
+        const [header, ...rows] = lines;
+        const cols = header.split(',').map(s => s.trim().toLowerCase());
+        const emailIdx = cols.indexOf('email');
+        const fnIdx = cols.indexOf('first_name');
+        const lnIdx = cols.indexOf('last_name');
+        for (const row of rows.slice(0, 200)) {
+          const parts = row.split(',');
+          const email = parts[emailIdx];
+          const firstName = parts[fnIdx];
+          const lastName = parts[lnIdx];
+          // Try to find user by email and send request if exists
+          const { data: target } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('email', email)
+            .single();
+          if (target?.id) {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+              await supabase
+                .from('connections')
+                .insert({ follower_id: user.id, following_id: target.id, status: 'pending' });
+            }
+          }
+        }
+        (e.target as HTMLInputElement).value = '';
+      }} />
 
       <div className="flex space-x-4">
         <div className="relative flex-1">
@@ -108,7 +152,7 @@ export const NetworkPage = () => {
                       <p className="text-sm text-gray-600 truncate">{person.title}</p>
                       <p className="text-xs text-gray-500 truncate">{person.company}</p>
                       <div className="flex space-x-2 mt-2">
-                        <Button size="sm">
+                        <Button size="sm" onClick={() => connectMutation.mutate(person.id)}>
                           <UserPlus className="h-3 w-3 mr-1" />
                           Connect
                         </Button>
