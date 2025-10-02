@@ -18,6 +18,42 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 export const NetworkPage = () => {
+  const handleImport = async (file: File) => {
+    const text = await file.text();
+    const lines = text.split(/\r?\n/).filter(Boolean);
+    if (lines.length < 2) return;
+    const [header, ...rows] = lines;
+    const cols = header.split(',').map((s) => s.trim().toLowerCase());
+    const emailIdx = cols.indexOf('email');
+    const fnIdx = cols.indexOf('first_name');
+    const lnIdx = cols.indexOf('last_name');
+    if (emailIdx === -1) return;
+    const sb: any = supabase; // loosen types to avoid deep generic instantiation during build
+    for (const row of rows.slice(0, 200)) {
+      try {
+        const parts = row.split(',');
+        const email = parts[emailIdx];
+        const firstName = fnIdx >= 0 ? parts[fnIdx] : undefined;
+        const lastName = lnIdx >= 0 ? parts[lnIdx] : undefined;
+        if (!email) continue;
+        const { data: target } = await sb
+          .from('profiles')
+          .select('id')
+          .eq('email', email)
+          .single();
+        if (target?.id) {
+          const { data: { user } } = await sb.auth.getUser();
+          if (user) {
+            await sb
+              .from('connections')
+              .insert({ follower_id: user.id, following_id: target.id, status: 'pending' });
+          }
+        }
+      } catch (_) {
+        // skip problematic row
+      }
+    }
+  };
   const { data: connections } = useQuery({
     queryKey: ['connections'],
     queryFn: async () => {
@@ -87,34 +123,7 @@ export const NetworkPage = () => {
       <input id="import-contacts-input" type="file" accept="text/csv" className="hidden" onChange={async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        const text = await file.text();
-        // naive CSV parse: expects header with email,first_name,last_name
-        const lines = text.split(/\r?\n/).filter(Boolean);
-        const [header, ...rows] = lines;
-        const cols = header.split(',').map(s => s.trim().toLowerCase());
-        const emailIdx = cols.indexOf('email');
-        const fnIdx = cols.indexOf('first_name');
-        const lnIdx = cols.indexOf('last_name');
-        for (const row of rows.slice(0, 200)) {
-          const parts = row.split(',');
-          const email = parts[emailIdx];
-          const firstName = parts[fnIdx];
-          const lastName = parts[lnIdx];
-          // Try to find user by email and send request if exists
-          const { data: target } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('email', email)
-            .single();
-          if (target?.id) {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-              await supabase
-                .from('connections')
-                .insert({ follower_id: user.id, following_id: target.id, status: 'pending' });
-            }
-          }
-        }
+        await handleImport(file);
         (e.target as HTMLInputElement).value = '';
       }} />
 
