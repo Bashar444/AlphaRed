@@ -16,16 +16,17 @@ export default function MessagesPage() {
     ;(async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user || !peerId) return
-      const { data } = await supabase
+      const sb: any = supabase
+      const { data } = await sb
         .from('messages')
         .select('*')
         .or(`and(sender_id.eq.${user.id},receiver_id.eq.${peerId}),and(sender_id.eq.${peerId},receiver_id.eq.${user.id})`)
         .order('created_at', { ascending: true })
-      setMessages((data as Msg[]) || [])
+      setMessages(((data as unknown) as Msg[]) || [])
 
-      const channel = supabase
+      const channel = sb
         .channel('chat')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload: any) => {
           const m = payload.new as Msg
           if ((m.sender_id === user.id && m.receiver_id === peerId) || (m.sender_id === peerId && m.receiver_id === user.id)) {
             setMessages((prev) => [...prev, m])
