@@ -142,11 +142,11 @@ export const NetworkPage = () => {
   });
 
   const acceptMutation = useMutation({
-    mutationFn: async (connectionId: number) => {
+    mutationFn: async (connectionId: string | number) => {
       const { error } = await supabase
         .from('connections')
         .update({ status: 'accepted' })
-        .eq('id', connectionId);
+        .eq('id', connectionId as any);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -157,11 +157,11 @@ export const NetworkPage = () => {
   });
 
   const ignoreMutation = useMutation({
-    mutationFn: async (connectionId: number) => {
+    mutationFn: async (connectionId: string | number) => {
       const { error } = await supabase
         .from('connections')
         .delete()
-        .eq('id', connectionId);
+        .eq('id', connectionId as any);
       if (error) throw error;
     },
     onSuccess: () => {
