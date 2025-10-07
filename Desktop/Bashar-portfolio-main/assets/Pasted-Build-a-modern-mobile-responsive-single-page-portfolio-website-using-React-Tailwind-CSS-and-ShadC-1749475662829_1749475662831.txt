@@ -1,0 +1,80 @@
+Build a modern, mobile-responsive single-page portfolio website using React, Tailwind CSS, and ShadCN UI components.
+
+🧾 Data to Use:
+Photo: Use the uploaded photo as a circular avatar or profile banner in the hero section.
+
+CV: Extract personal/professional data from the uploaded CV document titled: cv Dr.Bashar Al Agha with research projects listed.docx
+
+🧠 Sections (Auto-populated from CV):
+Hero Section
+
+Name: Dr. Bashar Al Agha
+
+Title: Healthcare & Management Professional
+
+Photo (center or side of hero block)
+
+Short tagline: "Dentist, Pharmacist, and Management Graduate driving innovation in healthcare and education."
+
+About Me
+
+Use the “Summary” from CV to generate a short, engaging paragraph.
+
+Skills & Certifications
+
+Group technical skills, languages, and certifications into badges or cards.
+
+Include: Marketing Analytics, Social Media, Excel, Healthcare Management, Research Methodology, etc.
+
+Education Timeline
+
+DDS (Dentistry – Damascus Univ.)
+
+B.Pharm (Marwadi University)
+
+PGDM Marketing (BIMTECH)
+
+Experience Timeline
+
+Dental Surgeon roles
+
+Internship at BMJ India & Navrik
+
+Managerial research roles
+
+Research Projects Section
+
+Display a card or list grid of major projects with title + one-line description.
+
+Contact Section
+
+Emails: bashar.agha25@bimtech.ac.in, basharalagha21@gmail.com
+
+Phone: +91-9667605190
+
+LinkedIn: linkedin.com/in/bashar-al-agha
+
+🎨 Design & Tech Instructions:
+Use ShadCN UI components like Card, Button, Avatar, Badge, Accordion, and Tabs where appropriate.
+
+Add dark/light mode toggle.
+
+Include smooth scrolling navigation links to sections (use ids).
+
+Responsive layout with good mobile and tablet support.
+
+Add a “Download CV” button using the uploaded .docx file.
+
+📁 Output:
+Static React-based website
+
+All content auto-filled from the CV
+
+Exportable as deployable folder (HTML/CSS/JS bundle)
+
+🔧 Optional Enhancements:
+Add project filtering or tabs by research area (Health, Pharma, Management)
+
+Add social media icons as buttons
+
+Simple animation (e.g. using Framer Motion for fade-in on scroll)
