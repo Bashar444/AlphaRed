@@ -139,10 +139,10 @@ export default function DashboardPage() {
                                     </div>
                                     <span
                                         className={`text-xs font-medium px-2.5 py-1 rounded-full ${survey.status === "live"
-                                                ? "bg-emerald-50 text-emerald-700"
-                                                : survey.status === "draft"
-                                                    ? "bg-slate-100 text-slate-600"
-                                                    : "bg-amber-50 text-amber-700"
+                                            ? "bg-emerald-50 text-emerald-700"
+                                            : survey.status === "draft"
+                                                ? "bg-slate-100 text-slate-600"
+                                                : "bg-amber-50 text-amber-700"
                                             }`}
                                     >
                                         {survey.status}
