@@ -2573,4 +2573,20 @@ $lang["survey_unavailable"] = "Survey is not available.";
 $lang["already_responded"] = "You have already responded to this survey.";
 $lang["pre_launch_checklist"] = "Pre-launch Checklist";
 
+// Phase 3 — Analysis & Reports
+$lang["analysis"] = "Analysis";
+$lang["run_analysis"] = "Run Analysis";
+$lang["descriptive_statistics"] = "Descriptive Statistics";
+$lang["correlation_matrix"] = "Correlation Matrix";
+$lang["completed_responses"] = "Completed Responses";
+$lang["avg_quality_score"] = "Avg Quality Score";
+$lang["export"] = "Export";
+$lang["csv"] = "CSV";
+$lang["xls"] = "Excel (XLS)";
+$lang["pdf"] = "PDF Report";
+$lang["zip"] = "Full Package (ZIP)";
+$lang["export_format_not_available"] = "This export format is not available on your plan.";
+$lang["regression_analysis"] = "Regression Analysis";
+$lang["frequency_distribution"] = "Frequency Distribution";
+
 return $lang;

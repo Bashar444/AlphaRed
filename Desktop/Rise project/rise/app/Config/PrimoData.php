@@ -62,4 +62,16 @@ class PrimoData extends BaseConfig {
         'closed' => array('archived'),
         'archived' => array(),
     );
+
+    // Claude AI configuration
+    public $claude_api_key = ''; // Set via .env or Settings
+    public $claude_model = 'claude-sonnet-4-20250514';
+
+    // Quality thresholds used by Quality_scorer library
+    public $quality_thresholds = array(
+        'min_duration_seconds' => 30,
+        'max_duration_seconds' => 3600,
+        'min_text_length' => 10,
+        'min_overall_score' => 50,
+    );
 }

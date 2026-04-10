@@ -90,6 +90,8 @@ class App_Controller extends Controller {
     public $Primo_responses_model;
     public $Primo_answers_model;
     public $Primo_targeting_presets_model;
+    public $Primo_analysis_reports_model;
+    public $Primo_exports_model;
     
     public function __construct() {
         //main template to make frame of this app
@@ -207,7 +209,9 @@ class App_Controller extends Controller {
             'Primo_respondents_model',
             'Primo_responses_model',
             'Primo_answers_model',
-            'Primo_targeting_presets_model'
+            'Primo_targeting_presets_model',
+            'Primo_analysis_reports_model',
+            'Primo_exports_model'
         );
     }
 
