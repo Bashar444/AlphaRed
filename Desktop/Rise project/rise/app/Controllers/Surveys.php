@@ -193,4 +193,128 @@ class Surveys extends Security_Controller {
         $view_data["survey_id"] = $survey_id;
         return $this->template->rander("surveys/questions_list", $view_data);
     }
+
+    /**
+     * Targeting setup for a survey.
+     */
+    function targeting($survey_id = 0) {
+        $survey = $this->Primo_surveys_model->get_one($survey_id);
+        if (!$survey->id || $survey->user_id != $this->login_user->id) {
+            show_404();
+        }
+
+        $presets = $this->Primo_targeting_presets_model->get_details(array(
+            "user_id" => $this->login_user->id,
+        ))->getResult();
+
+        // Estimate reach with current targeting
+        $matcher = new \App\Libraries\Panel_matcher();
+        $targeting = $survey->targeting ? json_decode($survey->targeting, true) : array();
+        $estimated_reach = $matcher->estimate_reach($targeting);
+
+        $view_data["survey_info"] = $survey;
+        $view_data["presets"] = $presets;
+        $view_data["estimated_reach"] = $estimated_reach;
+        $view_data["page_title"] = $survey->title . " — Targeting";
+        return $this->template->rander("surveys/targeting", $view_data);
+    }
+
+    /**
+     * Save targeting settings for a survey.
+     */
+    function save_targeting() {
+        $survey_id = $this->request->getPost('survey_id');
+        $survey = $this->Primo_surveys_model->get_one($survey_id);
+        if (!$survey->id || $survey->user_id != $this->login_user->id) {
+            echo json_encode(array("success" => false, "message" => "Access denied."));
+            return;
+        }
+
+        $targeting = array(
+            "age_min" => $this->request->getPost('age_min') ? intval($this->request->getPost('age_min')) : null,
+            "age_max" => $this->request->getPost('age_max') ? intval($this->request->getPost('age_max')) : null,
+            "gender" => $this->request->getPost('gender') ?: 'any',
+            "region" => $this->request->getPost('region') ?: null,
+        );
+
+        $this->Primo_surveys_model->ci_save(array(
+            "targeting" => json_encode($targeting),
+        ), $survey_id);
+
+        // Save as preset if requested
+        if ($this->request->getPost('save_preset') && $this->request->getPost('preset_name')) {
+            $this->Primo_targeting_presets_model->ci_save(array(
+                "user_id" => $this->login_user->id,
+                "name" => $this->request->getPost('preset_name'),
+                "filters" => json_encode($targeting),
+            ));
+        }
+
+        echo json_encode(array("success" => true, "message" => app_lang("record_saved")));
+    }
+
+    /**
+     * Launch a survey — multi-step wizard.
+     */
+    function launch($survey_id = 0) {
+        $survey = $this->Primo_surveys_model->get_one($survey_id);
+        if (!$survey->id || $survey->user_id != $this->login_user->id) {
+            show_404();
+        }
+
+        // Validate survey is ready for launch
+        $questions_count = $this->Primo_questions_model->get_question_count($survey_id);
+        $errors = array();
+        if ($questions_count < 1) {
+            $errors[] = "Survey must have at least one question.";
+        }
+        if ($survey->status !== 'draft') {
+            $errors[] = "Only draft surveys can be launched.";
+        }
+
+        // Check plan response limit
+        $total_responses = $this->Primo_responses_model->get_response_count($survey_id);
+        if (!$this->plan_limits->can_collect_responses($total_responses)) {
+            $errors[] = app_lang("response_limit_reached");
+        }
+
+        $matcher = new \App\Libraries\Panel_matcher();
+        $targeting = $survey->targeting ? json_decode($survey->targeting, true) : array();
+        $estimated_reach = $matcher->estimate_reach($targeting);
+
+        $view_data["survey_info"] = $survey;
+        $view_data["questions_count"] = $questions_count;
+        $view_data["estimated_reach"] = $estimated_reach;
+        $view_data["errors"] = $errors;
+        $view_data["page_title"] = "Launch: " . $survey->title;
+        return $this->template->rander("surveys/launch", $view_data);
+    }
+
+    /**
+     * Confirm and execute survey launch.
+     */
+    function do_launch() {
+        $survey_id = $this->request->getPost('survey_id');
+        $survey = $this->Primo_surveys_model->get_one($survey_id);
+        if (!$survey->id || $survey->user_id != $this->login_user->id) {
+            echo json_encode(array("success" => false, "message" => "Access denied."));
+            return;
+        }
+
+        if ($survey->status !== 'draft') {
+            echo json_encode(array("success" => false, "message" => "Survey must be in draft status to launch."));
+            return;
+        }
+
+        $starts_at = $this->request->getPost('starts_at') ?: date("Y-m-d H:i:s");
+        $ends_at = $this->request->getPost('ends_at') ?: null;
+
+        $this->Primo_surveys_model->ci_save(array(
+            "status" => "live",
+            "starts_at" => $starts_at,
+            "ends_at" => $ends_at,
+        ), $survey_id);
+
+        echo json_encode(array("success" => true, "message" => app_lang("launch_survey") . " — Survey is now live!"));
+    }
 }
