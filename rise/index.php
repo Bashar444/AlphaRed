@@ -31,6 +31,21 @@ define('FCPATH', __DIR__ . DIRECTORY_SEPARATOR);
 // Ensure the current directory is pointing to the front controller's directory
 chdir(FCPATH);
 
+// Ensure writable directories exist with proper permissions (Hostinger fix)
+$writableDirs = ['writable', 'writable/cache', 'writable/logs', 'writable/session', 'writable/debugbar', 'writable/uploads'];
+foreach ($writableDirs as $d) {
+    $path = FCPATH . $d;
+    if (!is_dir($path)) {
+        @mkdir($path, 0755, true);
+    }
+    if (!is_writable($path)) {
+        @chmod($path, 0755);
+    }
+    if (!is_writable($path)) {
+        @chmod($path, 0777);
+    }
+}
+
 /*
  *---------------------------------------------------------------
  * BOOTSTRAP THE APPLICATION

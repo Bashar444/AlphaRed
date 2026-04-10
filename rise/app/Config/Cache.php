@@ -33,6 +33,28 @@ class Cache extends BaseConfig
      */
     public string $backupHandler = 'dummy';
 
+    public function __construct()
+    {
+        parent::__construct();
+
+        // On Hostinger shared hosting, writable/cache may not exist or be writable.
+        // Auto-create and fix permissions, or fall back to dummy handler.
+        $cachePath = WRITEPATH . 'cache';
+        if (!is_dir($cachePath)) {
+            @mkdir($cachePath, 0755, true);
+        }
+        if (!is_writable($cachePath)) {
+            @chmod($cachePath, 0755);
+        }
+        if (!is_writable($cachePath)) {
+            @chmod($cachePath, 0777);
+        }
+        if (!is_writable($cachePath)) {
+            // Fall back to dummy so the app still works
+            $this->handler = 'dummy';
+        }
+    }
+
     /**
      * --------------------------------------------------------------------------
      * Cache Directory Path
