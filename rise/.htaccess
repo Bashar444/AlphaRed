@@ -1,9 +1,9 @@
 # PrimoData — Hostinger hPanel (LiteSpeed) deployment
-# Placed in public_html/rise/
+# Placed in public_html/ (root domain)
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteBase /rise/
+    RewriteBase /
 
     # If the request is for a real file or directory, serve it directly
     RewriteCond %{REQUEST_FILENAME} !-f
@@ -16,7 +16,7 @@
 # Fallback for LiteSpeed if mod_rewrite not detected
 <IfModule !mod_rewrite.c>
     <IfModule mod_alias.c>
-        RedirectMatch 307 ^/rise/(.*)$ /rise/index.php/$1
+        RedirectMatch 307 ^/(.*)$ /index.php/$1
     </IfModule>
 </IfModule>
 
