@@ -143,8 +143,11 @@ $routes->group('api/v1', ['namespace' => 'App\Controllers\Api'], function ($rout
     $routes->get('public/datasets/(:num)', 'PublicApi::dataset/$1');
     $routes->get('public/surveys/(:num)', 'PublicApi::survey/$1');
     $routes->post('public/surveys/(:num)/submit', 'PublicApi::submit_survey/$1');
+
+    // Plans (public, no auth)
+    $routes->get('public/plans', 'Subscriptions::plans');
 });
- */
+
 if (is_file(APPPATH . 'Config/' . ENVIRONMENT . '/Routes.php')) {
     require APPPATH . 'Config/' . ENVIRONMENT . '/Routes.php';
 }

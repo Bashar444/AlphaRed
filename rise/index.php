@@ -8,7 +8,7 @@ if (version_compare(PHP_VERSION, $minPHPVersion, '<')) {
 unset($minPHPVersion);
 
 //set the variable to 'installed' after installation
-$app_state = "pre_installation";
+$app_state = "installed";
 
 // we don't want to access the main project before installation. redirect to installation page
 if ($app_state === 'pre_installation') {

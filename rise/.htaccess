@@ -1,16 +1,24 @@
-# PrimoData - cPanel deployment .htaccess
-# Place this in the public_html/api subdomain root
+# PrimoData — Hostinger hPanel (LiteSpeed) deployment
+# Placed in public_html/rise/
 
-RewriteEngine On
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /rise/
 
-# Redirect Trailing Slashes
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)/$ /$1 [L,R=301]
+    # If the request is for a real file or directory, serve it directly
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
 
-# Route all requests to index.php
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ index.php/$1 [L]
+    # Route everything else through index.php
+    RewriteRule ^(.*)$ index.php/$1 [QSA,L]
+</IfModule>
+
+# Fallback for LiteSpeed if mod_rewrite not detected
+<IfModule !mod_rewrite.c>
+    <IfModule mod_alias.c>
+        RedirectMatch 307 ^/rise/(.*)$ /rise/index.php/$1
+    </IfModule>
+</IfModule>
 
 # Security headers
 <IfModule mod_headers.c>
@@ -20,13 +28,34 @@ RewriteRule ^(.*)$ index.php/$1 [L]
     Header set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
 
-# Protect sensitive files
+# Protect sensitive files (dotfiles, logs, SQL)
 <FilesMatch "^\.">
-    Order allow,deny
-    Deny from all
+    <IfModule authz_core_module>
+        Require all denied
+    </IfModule>
+    <IfModule !authz_core_module>
+        Order allow,deny
+        Deny from all
+    </IfModule>
 </FilesMatch>
 
 <FilesMatch "\.(env|log|sql)$">
-    Order allow,deny
-    Deny from all
+    <IfModule authz_core_module>
+        Require all denied
+    </IfModule>
+    <IfModule !authz_core_module>
+        Order allow,deny
+        Deny from all
+    </IfModule>
 </FilesMatch>
+
+# Disable directory listing
+Options -Indexes
+
+# PHP settings for Hostinger
+<IfModule mod_php.c>
+    php_value upload_max_filesize 64M
+    php_value post_max_size 64M
+    php_value max_execution_time 300
+    php_value max_input_time 300
+</IfModule>
