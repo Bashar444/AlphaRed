@@ -2589,4 +2589,30 @@ $lang["export_format_not_available"] = "This export format is not available on y
 $lang["regression_analysis"] = "Regression Analysis";
 $lang["frequency_distribution"] = "Frequency Distribution";
 
+// Phase 4 — Business Layer
+$lang["subscription_plans"] = "Subscription Plans";
+$lang["current_plan"] = "Current Plan";
+$lang["subscribe"] = "Subscribe";
+$lang["subscription_activated"] = "Subscription activated successfully!";
+$lang["subscription_cancelled"] = "Subscription cancelled.";
+$lang["month"] = "month";
+$lang["responses_per_survey"] = "responses per survey";
+$lang["questions_per_survey"] = "questions per survey";
+$lang["team_members"] = "Team Members";
+$lang["view_plans"] = "View Plans";
+$lang["api_keys"] = "API Keys";
+$lang["generate_key"] = "Generate Key";
+$lang["api_key_generated"] = "API key generated. Copy it now — it won't be shown again.";
+$lang["api_key_revoked"] = "API key revoked.";
+$lang["copy_key_warning"] = "This key will only be shown once. Copy it now!";
+$lang["enter_key_label"] = "Enter a label for this API key:";
+$lang["api_access_enterprise_only"] = "API access is available on the Enterprise plan.";
+$lang["requests"] = "Requests";
+$lang["last_used"] = "Last Used";
+$lang["label"] = "Label";
+$lang["copy"] = "Copy";
+$lang["created"] = "Created";
+$lang["active"] = "Active";
+$lang["revoked"] = "Revoked";
+
 return $lang;
