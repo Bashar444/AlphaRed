@@ -2615,4 +2615,30 @@ $lang["created"] = "Created";
 $lang["active"] = "Active";
 $lang["revoked"] = "Revoked";
 
+// Phase 5 — Admin & Polish
+$lang["primo_admin_dashboard"] = "PrimoData Admin Dashboard";
+$lang["total_revenue"] = "Total Revenue";
+$lang["active_subscriptions"] = "Active Subscriptions";
+$lang["total_surveys"] = "Total Surveys";
+$lang["total_responses"] = "Total Responses";
+$lang["total_respondents"] = "Total Respondents";
+$lang["plan_tiers"] = "Plan Tiers";
+$lang["mrr_by_tier"] = "MRR by Tier";
+$lang["usage_summary"] = "Usage Summary";
+$lang["manage_respondents"] = "Manage Respondents";
+$lang["manage_datasets"] = "Manage Datasets";
+$lang["revenue_dashboard"] = "Revenue Dashboard";
+$lang["monthly_revenue"] = "Monthly Revenue";
+$lang["metric"] = "Metric";
+$lang["total"] = "Total";
+$lang["age_group"] = "Age Group";
+$lang["gender"] = "Gender";
+$lang["region"] = "Region";
+$lang["education"] = "Education";
+$lang["income"] = "Income";
+$lang["response_history"] = "Response History";
+$lang["plan"] = "Plan";
+$lang["subscribers"] = "Subscribers";
+$lang["revenue"] = "Revenue";
+
 return $lang;
