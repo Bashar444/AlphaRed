@@ -79,6 +79,72 @@ $routes->post("Updates/(:any)", "Updates::$1");
  * You will have access to the $routes object within that file without
  * needing to reload it.
  */
+
+// ── PrimoData REST API v1 ────────────────────────────────────────────
+$routes->group('api/v1', ['namespace' => 'App\Controllers\Api'], function ($routes) {
+
+    // Auth (no JWT required for login/register)
+    $routes->post('auth/login', 'Auth::login');
+    $routes->post('auth/register', 'Auth::register');
+    $routes->get('auth/me', 'Auth::me');
+
+    // Surveys CRUD
+    $routes->get('surveys', 'Surveys::index');
+    $routes->get('surveys/(:num)', 'Surveys::show/$1');
+    $routes->post('surveys', 'Surveys::create');
+    $routes->put('surveys/(:num)', 'Surveys::update/$1');
+    $routes->delete('surveys/(:num)', 'Surveys::delete/$1');
+
+    // Survey questions
+    $routes->get('surveys/(:num)/questions', 'Surveys::questions/$1');
+    $routes->post('surveys/(:num)/questions', 'Surveys::add_question/$1');
+    $routes->put('surveys/(:num)/questions/(:num)', 'Surveys::update_question/$1/$2');
+    $routes->delete('surveys/(:num)/questions/(:num)', 'Surveys::delete_question/$1/$2');
+
+    // Targeting + launch
+    $routes->get('surveys/(:num)/targeting', 'Surveys::targeting/$1');
+    $routes->put('surveys/(:num)/targeting', 'Surveys::save_targeting/$1');
+    $routes->post('surveys/(:num)/launch', 'Surveys::launch/$1');
+
+    // Responses
+    $routes->get('surveys/(:num)/responses', 'Responses::index/$1');
+    $routes->get('surveys/(:num)/responses/quality', 'Responses::quality/$1');
+    $routes->post('surveys/(:num)/responses/score-all', 'Responses::score_all/$1');
+    $routes->get('responses/(:num)', 'Responses::show/$1');
+
+    // Analysis
+    $routes->get('surveys/(:num)/analysis', 'Analysis::show/$1');
+    $routes->post('surveys/(:num)/analysis/run', 'Analysis::run/$1');
+    $routes->get('surveys/(:num)/analysis/chart/(:num)', 'Analysis::chart/$1/$2');
+
+    // Exports
+    $routes->get('surveys/(:num)/exports', 'Exports::index/$1');
+    $routes->post('surveys/(:num)/exports/(:alpha)', 'Exports::generate/$1/$2');
+
+    // Subscriptions
+    $routes->get('subscriptions/plans', 'Subscriptions::plans');
+    $routes->get('subscriptions/current', 'Subscriptions::current');
+    $routes->post('subscriptions/checkout', 'Subscriptions::checkout');
+    $routes->post('subscriptions/verify', 'Subscriptions::verify');
+    $routes->post('subscriptions/cancel', 'Subscriptions::cancel');
+
+    // Admin
+    $routes->get('admin/dashboard', 'Admin::dashboard');
+    $routes->get('admin/respondents', 'Admin::respondents');
+    $routes->post('admin/respondents/(:num)/suspend', 'Admin::suspend_respondent/$1');
+    $routes->get('admin/datasets', 'Admin::datasets');
+    $routes->post('admin/datasets/(:num)/publish', 'Admin::publish_dataset/$1');
+    $routes->post('admin/datasets/(:num)/unpublish', 'Admin::unpublish_dataset/$1');
+    $routes->get('admin/revenue', 'Admin::revenue');
+
+    // Public (no auth)
+    $routes->get('public/datasets', 'PublicApi::datasets');
+    $routes->get('public/datasets/categories', 'PublicApi::categories');
+    $routes->get('public/datasets/(:num)', 'PublicApi::dataset/$1');
+    $routes->get('public/surveys/(:num)', 'PublicApi::survey/$1');
+    $routes->post('public/surveys/(:num)/submit', 'PublicApi::submit_survey/$1');
+});
+ */
 if (is_file(APPPATH . 'Config/' . ENVIRONMENT . '/Routes.php')) {
     require APPPATH . 'Config/' . ENVIRONMENT . '/Routes.php';
 }
