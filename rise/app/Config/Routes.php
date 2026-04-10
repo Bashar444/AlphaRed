@@ -42,6 +42,10 @@ $dir = "./app/Controllers/";
 if (is_dir($dir)) {
     if ($dh = opendir($dir)) {
         while (($file = readdir($dh)) !== false) {
+            // Skip directories (e.g. Api/), dotfiles, and non-PHP files
+            if (is_dir($dir . $file) || !str_ends_with($file, '.php')) {
+                continue;
+            }
             $controller_name = substr($file, 0, -4);
             if ($file && $file != "." && $file != ".." && $file != "index.html" && $file != ".gitkeep" && !in_array($controller_name, $excluded_controllers)) {
                 $controller_dropdown[] = $controller_name;
