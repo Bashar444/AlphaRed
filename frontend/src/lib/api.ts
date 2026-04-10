@@ -2,18 +2,19 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v
 
 type Method = "GET" | "POST" | "PUT" | "DELETE";
 
-interface ApiResponse<T = unknown> {
-    success: boolean;
-    message: string;
-    data: T;
+function getToken(): string | null {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("primo_token");
 }
 
-async function request<T = unknown>(
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function request<T = any>(
     method: Method,
     path: string,
     body?: Record<string, unknown>,
-    token?: string
-): Promise<ApiResponse<T>> {
+    explicitToken?: string
+): Promise<T> {
+    const token = explicitToken || getToken();
     const headers: Record<string, string> = {
         "Content-Type": "application/json",
     };
@@ -32,7 +33,7 @@ async function request<T = unknown>(
     if (!res.ok) {
         throw new Error(json.message || `API error ${res.status}`);
     }
-    return json as ApiResponse<T>;
+    return json.data !== undefined ? json.data : json;
 }
 
 // ── Auth ────────────────────────────────────────
@@ -41,103 +42,65 @@ export const auth = {
         request("POST", "/auth/login", { email, password }),
     register: (data: Record<string, unknown>) =>
         request("POST", "/auth/register", data),
-    me: (token: string) =>
+    me: (token?: string) =>
         request("GET", "/auth/me", undefined, token),
 };
 
 // ── Surveys ─────────────────────────────────────
 export const surveys = {
-    list: (token: string) =>
-        request("GET", "/surveys", undefined, token),
-    get: (id: number, token: string) =>
-        request("GET", `/surveys/${id}`, undefined, token),
-    create: (data: Record<string, unknown>, token: string) =>
-        request("POST", "/surveys", data, token),
-    update: (id: number, data: Record<string, unknown>, token: string) =>
-        request("PUT", `/surveys/${id}`, data, token),
-    delete: (id: number, token: string) =>
-        request("DELETE", `/surveys/${id}`, undefined, token),
-
-    // Questions
-    questions: (surveyId: number, token: string) =>
-        request("GET", `/surveys/${surveyId}/questions`, undefined, token),
-    addQuestion: (surveyId: number, data: Record<string, unknown>, token: string) =>
-        request("POST", `/surveys/${surveyId}/questions`, data, token),
-    updateQuestion: (surveyId: number, qId: number, data: Record<string, unknown>, token: string) =>
-        request("PUT", `/surveys/${surveyId}/questions/${qId}`, data, token),
-    deleteQuestion: (surveyId: number, qId: number, token: string) =>
-        request("DELETE", `/surveys/${surveyId}/questions/${qId}`, undefined, token),
-
-    // Targeting
-    getTargeting: (id: number, token: string) =>
-        request("GET", `/surveys/${id}/targeting`, undefined, token),
-    saveTargeting: (id: number, data: Record<string, unknown>, token: string) =>
-        request("PUT", `/surveys/${id}/targeting`, data, token),
-
-    // Launch
-    launch: (id: number, data: Record<string, unknown>, token: string) =>
-        request("POST", `/surveys/${id}/launch`, data, token),
+    list: () => request("GET", "/surveys"),
+    get: (id: number) => request("GET", `/surveys/${id}`),
+    create: (data: Record<string, unknown>) => request("POST", "/surveys", data),
+    update: (id: number, data: Record<string, unknown>) => request("PUT", `/surveys/${id}`, data),
+    delete: (id: number) => request("DELETE", `/surveys/${id}`),
+    questions: (surveyId: number) => request("GET", `/surveys/${surveyId}/questions`),
+    addQuestion: (surveyId: number, data: Record<string, unknown>) => request("POST", `/surveys/${surveyId}/questions`, data),
+    updateQuestion: (surveyId: number, qId: number, data: Record<string, unknown>) => request("PUT", `/surveys/${surveyId}/questions/${qId}`, data),
+    deleteQuestion: (surveyId: number, qId: number) => request("DELETE", `/surveys/${surveyId}/questions/${qId}`),
+    getTargeting: (id: number) => request("GET", `/surveys/${id}/targeting`),
+    saveTargeting: (id: number, data: Record<string, unknown>) => request("PUT", `/surveys/${id}/targeting`, data),
+    launch: (id: number, data: Record<string, unknown>) => request("POST", `/surveys/${id}/launch`, data),
 };
 
 // ── Responses ───────────────────────────────────
 export const responses = {
-    list: (surveyId: number, token: string) =>
-        request("GET", `/surveys/${surveyId}/responses`, undefined, token),
-    get: (id: number, token: string) =>
-        request("GET", `/responses/${id}`, undefined, token),
-    quality: (surveyId: number, token: string) =>
-        request("GET", `/surveys/${surveyId}/responses/quality`, undefined, token),
-    scoreAll: (surveyId: number, token: string) =>
-        request("POST", `/surveys/${surveyId}/responses/score-all`, undefined, token),
+    list: (surveyId: number) => request("GET", `/surveys/${surveyId}/responses`),
+    get: (id: number) => request("GET", `/responses/${id}`),
+    quality: (surveyId: number) => request("GET", `/surveys/${surveyId}/responses/quality`),
+    scoreAll: (surveyId: number) => request("POST", `/surveys/${surveyId}/responses/score-all`),
 };
 
 // ── Analysis ────────────────────────────────────
 export const analysis = {
-    get: (surveyId: number, token: string) =>
-        request("GET", `/surveys/${surveyId}/analysis`, undefined, token),
-    run: (surveyId: number, token: string) =>
-        request("POST", `/surveys/${surveyId}/analysis/run`, undefined, token),
-    chart: (surveyId: number, questionId: number, token: string) =>
-        request("GET", `/surveys/${surveyId}/analysis/chart/${questionId}`, undefined, token),
+    show: (surveyId: number) => request("GET", `/surveys/${surveyId}/analysis`),
+    run: (surveyId: number) => request("POST", `/surveys/${surveyId}/analysis/run`),
+    chart: (surveyId: number, questionId: number) => request("GET", `/surveys/${surveyId}/analysis/chart/${questionId}`),
 };
 
 // ── Exports ─────────────────────────────────────
 export const exports_ = {
-    list: (surveyId: number, token: string) =>
-        request("GET", `/surveys/${surveyId}/exports`, undefined, token),
-    generate: (surveyId: number, format: string, token: string) =>
-        request("POST", `/surveys/${surveyId}/exports/${format}`, undefined, token),
+    list: (surveyId: number) => request("GET", `/surveys/${surveyId}/exports`),
+    generate: (surveyId: number, format: string) => request("POST", `/surveys/${surveyId}/exports/${format}`),
 };
 
 // ── Subscriptions ───────────────────────────────
 export const subscriptions = {
     plans: () => request("GET", "/subscriptions/plans"),
-    current: (token: string) =>
-        request("GET", "/subscriptions/current", undefined, token),
-    checkout: (planKey: string, token: string) =>
-        request("POST", "/subscriptions/checkout", { plan_key: planKey }, token),
-    verify: (data: Record<string, unknown>, token: string) =>
-        request("POST", "/subscriptions/verify", data, token),
-    cancel: (token: string) =>
-        request("POST", "/subscriptions/cancel", undefined, token),
+    current: () => request("GET", "/subscriptions/current"),
+    checkout: (planKey: string) => request("POST", "/subscriptions/checkout", { plan_key: planKey }),
+    verify: (data: Record<string, unknown>) => request("POST", "/subscriptions/verify", data),
+    cancel: () => request("POST", "/subscriptions/cancel"),
 };
 
 // ── Admin ───────────────────────────────────────
 export const admin = {
-    dashboard: (token: string) =>
-        request("GET", "/admin/dashboard", undefined, token),
-    respondents: (token: string) =>
-        request("GET", "/admin/respondents", undefined, token),
-    suspendRespondent: (id: number, token: string) =>
-        request("POST", `/admin/respondents/${id}/suspend`, undefined, token),
-    datasets: (token: string) =>
-        request("GET", "/admin/datasets", undefined, token),
-    publishDataset: (id: number, token: string) =>
-        request("POST", `/admin/datasets/${id}/publish`, undefined, token),
-    unpublishDataset: (id: number, token: string) =>
-        request("POST", `/admin/datasets/${id}/unpublish`, undefined, token),
-    revenue: (token: string) =>
-        request("GET", "/admin/revenue", undefined, token),
+    dashboard: () => request("GET", "/admin/dashboard"),
+    respondents: () => request("GET", "/admin/respondents"),
+    suspendRespondent: (id: number) => request("POST", `/admin/respondents/${id}/suspend`),
+    datasets: () => request("GET", "/admin/datasets"),
+    publishDataset: (id: number) => request("POST", `/admin/datasets/${id}/publish`),
+    unpublishDataset: (id: number) => request("POST", `/admin/datasets/${id}/unpublish`),
+    revenue: () => request("GET", "/admin/revenue"),
 };
 
 // ── Public ──────────────────────────────────────
@@ -149,12 +112,20 @@ export const publicApi = {
         const qs = params.toString();
         return request("GET", `/public/datasets${qs ? "?" + qs : ""}`);
     },
-    dataset: (id: number) =>
-        request("GET", `/public/datasets/${id}`),
-    categories: () =>
-        request("GET", "/public/datasets/categories"),
-    survey: (id: number) =>
-        request("GET", `/public/surveys/${id}`),
-    submitSurvey: (id: number, data: Record<string, unknown>) =>
-        request("POST", `/public/surveys/${id}/submit`, data),
+    dataset: (id: number) => request("GET", `/public/datasets/${id}`),
+    categories: () => request("GET", "/public/datasets/categories"),
+    survey: (id: number) => request("GET", `/public/surveys/${id}`),
+    submitSurvey: (id: number, data: Record<string, unknown>) => request("POST", `/public/surveys/${id}/submit`, data),
+};
+
+// Unified api object for convenient imports: import { api } from "@/lib/api"
+export const api = {
+    auth,
+    surveys,
+    responses,
+    analysis,
+    exports: exports_,
+    subscriptions,
+    admin,
+    public: publicApi,
 };

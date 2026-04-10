@@ -61,7 +61,7 @@ export default function ExportsPage() {
 
     async function loadExports(id: number) {
         try {
-            const data = await api.exports_.list(id);
+            const data = await api.exports.list(id);
             setExports(data || []);
         } catch {
             setExports([]);
@@ -72,7 +72,7 @@ export default function ExportsPage() {
         if (!selectedId) return;
         setGenerating(format);
         try {
-            const result = await api.exports_.generate(selectedId, format);
+            const result = await api.exports.generate(selectedId, format);
             if (result.download_url) {
                 window.open(result.download_url, "_blank");
             }

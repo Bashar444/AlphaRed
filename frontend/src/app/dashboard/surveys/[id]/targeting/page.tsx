@@ -47,7 +47,7 @@ export default function TargetingPage() {
 
     const load = useCallback(async () => {
         try {
-            const data = await api.surveys.targeting(surveyId);
+            const data = await api.surveys.getTargeting(surveyId);
             setTargeting(data || {});
         } catch {
             // no targeting yet
@@ -67,7 +67,7 @@ export default function TargetingPage() {
     async function handleSave() {
         setSaving(true);
         try {
-            await api.surveys.saveTargeting(surveyId, targeting);
+            await api.surveys.saveTargeting(surveyId, { ...targeting } as Record<string, unknown>);
             await load();
         } finally {
             setSaving(false);

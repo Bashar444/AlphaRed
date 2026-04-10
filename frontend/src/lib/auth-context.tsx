@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             authApi
                 .me(stored)
                 .then((res) => {
-                    setUser(res.data as unknown as User);
+                    setUser(res as unknown as User);
                 })
                 .catch(() => {
                     localStorage.removeItem("primo_token");
@@ -59,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const login = useCallback(async (email: string, password: string) => {
         const res = await authApi.login(email, password);
-        const { token: t, user: u } = res.data as unknown as { token: string; user: User };
+        const { token: t, user: u } = res as unknown as { token: string; user: User };
         localStorage.setItem("primo_token", t);
         setToken(t);
         setUser(u);
@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const register = useCallback(async (data: Record<string, unknown>) => {
         const res = await authApi.register(data);
-        const { token: t, user: u } = res.data as unknown as { token: string; user: User };
+        const { token: t, user: u } = res as unknown as { token: string; user: User };
         localStorage.setItem("primo_token", t);
         setToken(t);
         setUser(u);

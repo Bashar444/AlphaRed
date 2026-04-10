@@ -85,10 +85,11 @@ export default function SurveyBuilderPage() {
             await api.surveys.update(surveyId, { title, description });
             // Save questions
             for (const q of questions) {
+                const payload = { ...q } as Record<string, unknown>;
                 if (q.id) {
-                    await api.surveys.updateQuestion(surveyId, q.id, q);
+                    await api.surveys.updateQuestion(surveyId, q.id, payload);
                 } else {
-                    const created = await api.surveys.addQuestion(surveyId, q);
+                    const created = await api.surveys.addQuestion(surveyId, payload);
                     q.id = created.id;
                 }
             }
@@ -103,7 +104,7 @@ export default function SurveyBuilderPage() {
             return;
         setLaunching(true);
         try {
-            await api.surveys.launch(surveyId);
+            await api.surveys.launch(surveyId, {});
             await load();
         } finally {
             setLaunching(false);

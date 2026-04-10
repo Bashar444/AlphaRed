@@ -95,7 +95,7 @@ export default function DashboardPage() {
                     value={data?.active_surveys ?? 0}
                     icon={<Activity className="w-5 h-5" />}
                     subtitle="Currently live"
-                    trend={{ direction: "up", value: "Active" }}
+                    trend={{ value: "Active", positive: true }}
                 />
                 <StatCard
                     title="Total Responses"
