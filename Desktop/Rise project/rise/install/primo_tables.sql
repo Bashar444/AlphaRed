@@ -1,0 +1,198 @@
+-- PrimoData Analytics — Database Tables
+-- All tables prefixed with primo_ to avoid clash with RISE core tables
+-- Run after RISE base installation
+
+-- ─── SURVEYS ────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS `primo_surveys` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `description` text,
+  `status` enum('draft','active','paused','closed','archived') DEFAULT 'draft',
+  `target_responses` int(11) DEFAULT 100,
+  `collected_count` int(11) DEFAULT 0,
+  `targeting` json DEFAULT NULL,
+  `language` varchar(10) DEFAULT 'en',
+  `starts_at` datetime DEFAULT NULL,
+  `ends_at` datetime DEFAULT NULL,
+  `created_by` int(11) NOT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT NULL,
+  `deleted` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `primo_questions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `survey_id` int(11) NOT NULL,
+  `sort` int(11) DEFAULT 0,
+  `type` enum('single_choice','multiple_choice','text','number','rating','scale','dropdown','matrix','date','file_upload') NOT NULL DEFAULT 'single_choice',
+  `text` text NOT NULL,
+  `options` json DEFAULT NULL,
+  `logic` json DEFAULT NULL,
+  `validation_rules` json DEFAULT NULL,
+  `required` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `deleted` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_survey_id` (`survey_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `primo_targeting_presets` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `filters` json DEFAULT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `deleted` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- ─── RESPONDENTS ────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS `primo_respondents` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `kyc_status` enum('pending','verified','rejected') DEFAULT 'pending',
+  `quality_score` decimal(5,2) DEFAULT 0.00,
+  `total_surveys` int(11) DEFAULT 0,
+  `rejected_count` int(11) DEFAULT 0,
+  `demographics` json DEFAULT NULL,
+  `verified_at` datetime DEFAULT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `deleted` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_kyc_status` (`kyc_status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `primo_respondent_otp` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `respondent_id` int(11) NOT NULL,
+  `otp_hash` varchar(255) NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_respondent_id` (`respondent_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- ─── RESPONSES ──────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS `primo_responses` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `survey_id` int(11) NOT NULL,
+  `respondent_id` int(11) NOT NULL,
+  `status` enum('in_progress','completed','disqualified','rejected') DEFAULT 'in_progress',
+  `quality_score` decimal(5,2) DEFAULT NULL,
+  `quality_flags` json DEFAULT NULL,
+  `completed_at` datetime DEFAULT NULL,
+  `duration_secs` int(11) DEFAULT NULL,
+  `ip_hash` varchar(64) DEFAULT NULL,
+  `device_hash` varchar(64) DEFAULT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `deleted` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_survey_id` (`survey_id`),
+  KEY `idx_respondent_id` (`respondent_id`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `primo_answers` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `response_id` int(11) NOT NULL,
+  `question_id` int(11) NOT NULL,
+  `value` json DEFAULT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_response_id` (`response_id`),
+  KEY `idx_question_id` (`question_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- ─── ANALYSIS ───────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS `primo_analysis_reports` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `survey_id` int(11) NOT NULL,
+  `status` enum('pending','processing','completed','failed') DEFAULT 'pending',
+  `results` json DEFAULT NULL,
+  `ai_narrative` text DEFAULT NULL,
+  `created_by` int(11) NOT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `completed_at` datetime DEFAULT NULL,
+  `deleted` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_survey_id` (`survey_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- ─── EXPORTS ────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS `primo_exports` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `survey_id` int(11) NOT NULL,
+  `report_id` int(11) DEFAULT NULL,
+  `format` enum('pdf','xls','csv','zip') NOT NULL,
+  `file_path` varchar(500) DEFAULT NULL,
+  `file_url` varchar(500) DEFAULT NULL,
+  `status` enum('pending','processing','completed','failed') DEFAULT 'pending',
+  `created_by` int(11) NOT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `deleted` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_survey_id` (`survey_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- ─── PUBLIC STATS PORTAL ────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS `primo_public_datasets` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `title` varchar(255) NOT NULL,
+  `category` varchar(100) DEFAULT NULL,
+  `region` varchar(100) DEFAULT NULL,
+  `description` text,
+  `data` json DEFAULT NULL,
+  `source` varchar(255) DEFAULT NULL,
+  `year` int(4) DEFAULT NULL,
+  `tags` varchar(500) DEFAULT NULL,
+  `featured` tinyint(1) DEFAULT 0,
+  `view_count` int(11) DEFAULT 0,
+  `created_by` int(11) NOT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT NULL,
+  `deleted` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_category` (`category`),
+  KEY `idx_featured` (`featured`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- ─── API KEYS ───────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS `primo_api_keys` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `key_hash` varchar(255) NOT NULL,
+  `last_used_at` datetime DEFAULT NULL,
+  `expires_at` datetime DEFAULT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `deleted` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `idx_user_id` (`user_id`),
+  UNIQUE KEY `idx_key_hash` (`key_hash`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- ─── USAGE LOGS ─────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS `primo_usage_logs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) NOT NULL,
+  `action` varchar(100) NOT NULL,
+  `metadata` json DEFAULT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_action` (`action`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;

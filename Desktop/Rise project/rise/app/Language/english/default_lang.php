@@ -2528,4 +2528,32 @@ $lang["estimate_lock_state_description"] = "Once you enable the lock state, the 
 $lang["proposal_lock_state_description"] = "Once you enable the lock state, the accepted proposals canâ€™t be edited.";
 $lang["contract_lock_state_description"] = "Once you enable the lock state, the accepted contracts can't be edited.";
 
+/* PrimoData Analytics */
+$lang["surveys"] = "Surveys";
+$lang["survey"] = "Survey";
+$lang["add_survey"] = "Add Survey";
+$lang["edit_survey"] = "Edit Survey";
+$lang["delete_survey"] = "Delete Survey";
+$lang["survey_builder"] = "Survey Builder";
+$lang["target_responses"] = "Target Responses";
+$lang["collected_responses"] = "Collected Responses";
+$lang["survey_limit_reached"] = "You have reached your survey limit for the current plan.";
+$lang["question_limit_reached"] = "You have reached the question limit per survey for the current plan.";
+$lang["response_limit_reached"] = "You have reached the response limit for the current plan.";
+$lang["respondents"] = "Respondents";
+$lang["respondent"] = "Respondent";
+$lang["public_stats"] = "Public Statistics";
+$lang["datasets"] = "Datasets";
+$lang["featured_datasets"] = "Featured Datasets";
+$lang["analysis_reports"] = "Analysis Reports";
+$lang["export_data"] = "Export Data";
+$lang["plan_upgrade_required"] = "Please upgrade your plan to use this feature.";
+$lang["ai_narrative"] = "AI Narrative";
+$lang["api_access"] = "API Access";
+$lang["launch_survey"] = "Launch Survey";
+$lang["close_survey"] = "Close Survey";
+$lang["draft"] = "Draft";
+$lang["live"] = "Live";
+$lang["closed"] = "Closed";
+
 return $lang;
