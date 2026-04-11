@@ -199,6 +199,181 @@ $routes->group('api/v1', ['namespace' => 'App\Controllers\Api'], function ($rout
 
     // Plans (public, no auth)
     $routes->get('public/plans', 'Subscriptions::plans');
+
+    // ── RISE CRM API Layer (Phase G) ─────────────────────────────────
+
+    // Projects
+    $routes->get('projects', 'ApiProjects::index');
+    $routes->get('projects/(:num)', 'ApiProjects::show/$1');
+    $routes->post('projects', 'ApiProjects::create');
+    $routes->put('projects/(:num)', 'ApiProjects::update/$1');
+    $routes->delete('projects/(:num)', 'ApiProjects::delete/$1');
+    $routes->get('projects/(:num)/members', 'ApiProjects::members/$1');
+    $routes->get('projects/(:num)/milestones', 'ApiProjects::milestones/$1');
+
+    // Tasks
+    $routes->get('tasks', 'ApiTasks::index');
+    $routes->get('tasks/statuses', 'ApiTasks::statuses');
+    $routes->get('tasks/(:num)', 'ApiTasks::show/$1');
+    $routes->post('tasks', 'ApiTasks::create');
+    $routes->put('tasks/(:num)', 'ApiTasks::update/$1');
+    $routes->delete('tasks/(:num)', 'ApiTasks::delete/$1');
+    $routes->post('tasks/(:num)/status', 'ApiTasks::change_status/$1');
+
+    // Invoices
+    $routes->get('invoices', 'ApiInvoices::index');
+    $routes->get('invoices/(:num)', 'ApiInvoices::show/$1');
+    $routes->post('invoices', 'ApiInvoices::create');
+    $routes->put('invoices/(:num)', 'ApiInvoices::update/$1');
+    $routes->delete('invoices/(:num)', 'ApiInvoices::delete/$1');
+    $routes->get('invoices/(:num)/payments', 'ApiInvoices::payments/$1');
+    $routes->post('invoices/(:num)/payments', 'ApiInvoices::add_payment/$1');
+
+    // Clients
+    $routes->get('clients', 'ApiClients::index');
+    $routes->get('clients/groups', 'ApiClients::groups');
+    $routes->get('clients/(:num)', 'ApiClients::show/$1');
+    $routes->post('clients', 'ApiClients::create');
+    $routes->put('clients/(:num)', 'ApiClients::update/$1');
+    $routes->delete('clients/(:num)', 'ApiClients::delete/$1');
+    $routes->get('clients/(:num)/contacts', 'ApiClients::contacts/$1');
+
+    // Leads
+    $routes->get('leads', 'ApiLeads::index');
+    $routes->get('leads/statuses', 'ApiLeads::statuses');
+    $routes->get('leads/sources', 'ApiLeads::sources');
+    $routes->get('leads/(:num)', 'ApiLeads::show/$1');
+    $routes->post('leads', 'ApiLeads::create');
+    $routes->put('leads/(:num)', 'ApiLeads::update/$1');
+    $routes->delete('leads/(:num)', 'ApiLeads::delete/$1');
+
+    // Expenses
+    $routes->get('expenses', 'ApiExpenses::index');
+    $routes->get('expenses/categories', 'ApiExpenses::categories');
+    $routes->get('expenses/(:num)', 'ApiExpenses::show/$1');
+    $routes->post('expenses', 'ApiExpenses::create');
+    $routes->put('expenses/(:num)', 'ApiExpenses::update/$1');
+    $routes->delete('expenses/(:num)', 'ApiExpenses::delete/$1');
+
+    // Tickets
+    $routes->get('tickets', 'ApiTickets::index');
+    $routes->get('tickets/types', 'ApiTickets::types');
+    $routes->get('tickets/(:num)', 'ApiTickets::show/$1');
+    $routes->post('tickets', 'ApiTickets::create');
+    $routes->put('tickets/(:num)', 'ApiTickets::update/$1');
+    $routes->delete('tickets/(:num)', 'ApiTickets::delete/$1');
+    $routes->get('tickets/(:num)/comments', 'ApiTickets::comments/$1');
+    $routes->post('tickets/(:num)/comments', 'ApiTickets::add_comment/$1');
+
+    // Events
+    $routes->get('events', 'ApiEvents::index');
+    $routes->get('events/(:num)', 'ApiEvents::show/$1');
+    $routes->post('events', 'ApiEvents::create');
+    $routes->put('events/(:num)', 'ApiEvents::update/$1');
+    $routes->delete('events/(:num)', 'ApiEvents::delete/$1');
+
+    // Team
+    $routes->get('team', 'ApiTeam::index');
+    $routes->get('team/(:num)', 'ApiTeam::show/$1');
+    $routes->post('team', 'ApiTeam::create');
+    $routes->put('team/(:num)', 'ApiTeam::update/$1');
+    $routes->delete('team/(:num)', 'ApiTeam::delete/$1');
+
+    // Timesheets
+    $routes->get('timesheets', 'ApiTimesheets::index');
+    $routes->get('timesheets/(:num)', 'ApiTimesheets::show/$1');
+    $routes->post('timesheets', 'ApiTimesheets::create');
+    $routes->put('timesheets/(:num)', 'ApiTimesheets::update/$1');
+    $routes->delete('timesheets/(:num)', 'ApiTimesheets::delete/$1');
+
+    // Attendance
+    $routes->get('attendance', 'ApiAttendance::index');
+    $routes->get('attendance/status', 'ApiAttendance::status');
+    $routes->post('attendance/clock-in', 'ApiAttendance::clock_in');
+    $routes->post('attendance/clock-out', 'ApiAttendance::clock_out');
+
+    // Leaves
+    $routes->get('leaves', 'ApiLeaves::index');
+    $routes->get('leaves/types', 'ApiLeaves::types');
+    $routes->get('leaves/(:num)', 'ApiLeaves::show/$1');
+    $routes->post('leaves', 'ApiLeaves::create');
+    $routes->post('leaves/(:num)/approve', 'ApiLeaves::approve/$1');
+    $routes->post('leaves/(:num)/reject', 'ApiLeaves::reject/$1');
+
+    // Estimates
+    $routes->get('estimates', 'ApiEstimates::index');
+    $routes->get('estimates/(:num)', 'ApiEstimates::show/$1');
+    $routes->post('estimates', 'ApiEstimates::create');
+    $routes->put('estimates/(:num)', 'ApiEstimates::update/$1');
+    $routes->delete('estimates/(:num)', 'ApiEstimates::delete/$1');
+
+    // Contracts
+    $routes->get('contracts', 'ApiContracts::index');
+    $routes->get('contracts/(:num)', 'ApiContracts::show/$1');
+    $routes->post('contracts', 'ApiContracts::create');
+    $routes->put('contracts/(:num)', 'ApiContracts::update/$1');
+    $routes->delete('contracts/(:num)', 'ApiContracts::delete/$1');
+
+    // Proposals
+    $routes->get('proposals', 'ApiProposals::index');
+    $routes->get('proposals/(:num)', 'ApiProposals::show/$1');
+    $routes->post('proposals', 'ApiProposals::create');
+    $routes->put('proposals/(:num)', 'ApiProposals::update/$1');
+    $routes->delete('proposals/(:num)', 'ApiProposals::delete/$1');
+
+    // Orders
+    $routes->get('orders', 'ApiOrders::index');
+    $routes->get('orders/statuses', 'ApiOrders::statuses');
+    $routes->get('orders/(:num)', 'ApiOrders::show/$1');
+    $routes->post('orders', 'ApiOrders::create');
+    $routes->put('orders/(:num)', 'ApiOrders::update/$1');
+    $routes->delete('orders/(:num)', 'ApiOrders::delete/$1');
+
+    // Messages
+    $routes->get('messages', 'ApiMessages::index');
+    $routes->get('messages/(:num)', 'ApiMessages::show/$1');
+    $routes->post('messages', 'ApiMessages::create');
+    $routes->delete('messages/(:num)', 'ApiMessages::delete/$1');
+
+    // Announcements
+    $routes->get('announcements', 'ApiAnnouncements::index');
+    $routes->get('announcements/(:num)', 'ApiAnnouncements::show/$1');
+    $routes->post('announcements', 'ApiAnnouncements::create');
+    $routes->put('announcements/(:num)', 'ApiAnnouncements::update/$1');
+    $routes->delete('announcements/(:num)', 'ApiAnnouncements::delete/$1');
+
+    // Notes
+    $routes->get('notes', 'ApiNotes::index');
+    $routes->get('notes/(:num)', 'ApiNotes::show/$1');
+    $routes->post('notes', 'ApiNotes::create');
+    $routes->put('notes/(:num)', 'ApiNotes::update/$1');
+    $routes->delete('notes/(:num)', 'ApiNotes::delete/$1');
+
+    // Todo
+    $routes->get('todo', 'ApiTodo::index');
+    $routes->post('todo', 'ApiTodo::create');
+    $routes->put('todo/(:num)', 'ApiTodo::update/$1');
+    $routes->post('todo/(:num)/toggle', 'ApiTodo::toggle/$1');
+    $routes->delete('todo/(:num)', 'ApiTodo::delete/$1');
+
+    // Reports (admin)
+    $routes->get('reports/overview', 'ApiReports::overview');
+    $routes->get('reports/revenue', 'ApiReports::revenue');
+    $routes->get('reports/project-status', 'ApiReports::project_status');
+    $routes->get('reports/task-summary', 'ApiReports::task_summary');
+
+    // Settings (admin)
+    $routes->get('settings', 'ApiSettings::index');
+    $routes->get('settings/(:segment)', 'ApiSettings::show/$1');
+    $routes->put('settings/(:segment)', 'ApiSettings::update/$1');
+    $routes->put('settings', 'ApiSettings::batch_update');
+
+    // Roles (admin)
+    $routes->get('roles', 'ApiRoles::index');
+    $routes->get('roles/(:num)', 'ApiRoles::show/$1');
+    $routes->post('roles', 'ApiRoles::create');
+    $routes->put('roles/(:num)', 'ApiRoles::update/$1');
+    $routes->delete('roles/(:num)', 'ApiRoles::delete/$1');
 });
 
 if (is_file(APPPATH . 'Config/' . ENVIRONMENT . '/Routes.php')) {
