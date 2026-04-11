@@ -5,6 +5,25 @@
     RewriteEngine On
     RewriteBase /
 
+    # ── CORS preflight: answer OPTIONS immediately at server level ──
+    RewriteCond %{REQUEST_METHOD} OPTIONS
+    RewriteRule ^(api/.*)$ - [R=204,L]
+</IfModule>
+
+<IfModule mod_headers.c>
+    # CORS headers for API routes
+    <If "%{REQUEST_URI} =~ m#^/(index\.php/)?api/#">
+        Header always set Access-Control-Allow-Origin "https://alpha-red-nine.vercel.app"
+        Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+        Header always set Access-Control-Allow-Headers "Authorization, Content-Type, X-Requested-With"
+        Header always set Access-Control-Max-Age "86400"
+    </If>
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
     # If the request is for a real file or directory, serve it directly
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d

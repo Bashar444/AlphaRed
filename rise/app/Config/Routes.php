@@ -84,6 +84,22 @@ $routes->post("Updates/(:any)", "Updates::$1");
  * needing to reload it.
  */
 
+// ── CORS preflight catch-all (must be BEFORE the API group) ──────────
+$routes->options('api/v1/(:any)', static function () {
+    $allowed = getenv('CORS_ALLOWED_ORIGIN') ?: '*';
+    $origins = array_map('trim', explode(',', $allowed));
+    $reqOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
+    $origin = in_array($reqOrigin, $origins, true) ? $reqOrigin : $origins[0];
+
+    header('Access-Control-Allow-Origin: ' . $origin);
+    header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+    header('Access-Control-Allow-Headers: Authorization, Content-Type, X-Requested-With');
+    header('Access-Control-Max-Age: 86400');
+    header('Content-Length: 0');
+    http_response_code(204);
+    exit;
+});
+
 // ── PrimoData REST API v1 ────────────────────────────────────────────
 $routes->group('api/v1', ['namespace' => 'App\Controllers\Api'], function ($routes) {
 
