@@ -8,6 +8,7 @@ import {
     BarChart3,
     ClipboardList,
     Download,
+    FileText,
     Key,
     LayoutDashboard,
     LogOut,
@@ -32,6 +33,7 @@ const adminNav = [
     { href: "/dashboard/admin/respondents", label: "Respondents", icon: Users },
     { href: "/dashboard/admin/datasets", label: "Datasets", icon: Database },
     { href: "/dashboard/admin/revenue", label: "Revenue", icon: BarChart3 },
+    { href: "/dashboard/admin/cms", label: "CMS", icon: FileText },
 ];
 
 export function Sidebar() {
