@@ -75,6 +75,40 @@ class Filters extends BaseConfig {
      */
     public array $filters = [
         'cors' => ['before' => ['api/*']],
-        'api_auth' => ['before' => ['api/v1/surveys*', 'api/v1/analysis*', 'api/v1/exports*', 'api/v1/responses*', 'api/v1/subscriptions*', 'api/v1/admin*', 'api/v1/auth/me']],
+        'api_auth' => ['before' => [
+            // Original PrimoData routes
+            'api/v1/surveys*',
+            'api/v1/analysis*',
+            'api/v1/exports*',
+            'api/v1/responses*',
+            'api/v1/subscriptions*',
+            'api/v1/admin*',
+            'api/v1/auth/me',
+            'api/v1/api-keys*',
+            // Phase G — RISE CRM routes
+            'api/v1/projects*',
+            'api/v1/tasks*',
+            'api/v1/invoices*',
+            'api/v1/clients*',
+            'api/v1/leads*',
+            'api/v1/expenses*',
+            'api/v1/tickets*',
+            'api/v1/events*',
+            'api/v1/team*',
+            'api/v1/timesheets*',
+            'api/v1/attendance*',
+            'api/v1/leaves*',
+            'api/v1/estimates*',
+            'api/v1/contracts*',
+            'api/v1/proposals*',
+            'api/v1/orders*',
+            'api/v1/messages*',
+            'api/v1/announcements*',
+            'api/v1/notes*',
+            'api/v1/todo*',
+            'api/v1/reports*',
+            'api/v1/settings*',
+            'api/v1/roles*',
+        ]],
     ];
 }

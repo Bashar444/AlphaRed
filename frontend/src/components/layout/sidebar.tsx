@@ -87,6 +87,9 @@ export function Sidebar() {
     const pathname = usePathname();
     const { user, logout } = useAuth();
 
+    // RBAC: staff and admin users see Business & Team sections
+    const isStaff = user?.user_type === "staff" || user?.is_admin;
+
     return (
         <aside className="flex flex-col w-64 min-h-screen bg-slate-950 text-white border-r border-slate-800">
             {/* Logo */}
@@ -121,53 +124,61 @@ export function Sidebar() {
                     );
                 })}
 
-                {/* Business section */}
-                <div className="pt-4" />
-                <p className="px-3 text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">
-                    Business
-                </p>
-                {businessNav.map((item) => {
-                    const active = pathname === item.href || pathname?.startsWith(item.href + "/");
-                    return (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className={cn(
-                                "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                                active
-                                    ? "bg-violet-600/20 text-violet-400"
-                                    : "text-slate-400 hover:bg-slate-800 hover:text-white"
-                            )}
-                        >
-                            <item.icon className="w-4 h-4" />
-                            {item.label}
-                        </Link>
-                    );
-                })}
+                {/* Business section — staff/admin only */}
+                {isStaff && (
+                    <>
+                        <div className="pt-4" />
+                        <p className="px-3 text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">
+                            Business
+                        </p>
+                        {businessNav.map((item) => {
+                            const active = pathname === item.href || pathname?.startsWith(item.href + "/");
+                            return (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    className={cn(
+                                        "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                                        active
+                                            ? "bg-violet-600/20 text-violet-400"
+                                            : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                                    )}
+                                >
+                                    <item.icon className="w-4 h-4" />
+                                    {item.label}
+                                </Link>
+                            );
+                        })}
+                    </>
+                )}
 
-                {/* Team section */}
-                <div className="pt-4" />
-                <p className="px-3 text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">
-                    Team
-                </p>
-                {teamNav.map((item) => {
-                    const active = pathname === item.href || pathname?.startsWith(item.href + "/");
-                    return (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className={cn(
-                                "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                                active
-                                    ? "bg-violet-600/20 text-violet-400"
-                                    : "text-slate-400 hover:bg-slate-800 hover:text-white"
-                            )}
-                        >
-                            <item.icon className="w-4 h-4" />
-                            {item.label}
-                        </Link>
-                    );
-                })}
+                {/* Team section — staff/admin only */}
+                {isStaff && (
+                    <>
+                        <div className="pt-4" />
+                        <p className="px-3 text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">
+                            Team
+                        </p>
+                        {teamNav.map((item) => {
+                            const active = pathname === item.href || pathname?.startsWith(item.href + "/");
+                            return (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    className={cn(
+                                        "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                                        active
+                                            ? "bg-violet-600/20 text-violet-400"
+                                            : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                                    )}
+                                >
+                                    <item.icon className="w-4 h-4" />
+                                    {item.label}
+                                </Link>
+                            );
+                        })}
+                    </>
+                )}
 
                 {/* Tools section */}
                 <div className="pt-4" />

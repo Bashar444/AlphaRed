@@ -55,6 +55,36 @@ class Api_base extends App_Controller
     }
 
     /**
+     * Admin guard — halts execution with 403 if the user is not admin.
+     * Called as $this->_guard(); at the top of admin-only methods.
+     */
+    protected function _guard(): void
+    {
+        if (!$this->api_is_admin) {
+            $this->response
+                ->setStatusCode(403)
+                ->setJSON(['success' => false, 'message' => 'Access denied'])
+                ->send();
+            exit;
+        }
+    }
+
+    /**
+     * Admin guard — halts execution with 403 if the user is not admin.
+     * Called as $this->_guard(); at the top of admin-only methods.
+     */
+    protected function _guard(): void
+    {
+        if (!$this->api_is_admin) {
+            $this->response
+                ->setStatusCode(403)
+                ->setJSON(['success' => false, 'message' => 'Access denied'])
+                ->send();
+            exit;
+        }
+    }
+
+    /**
      * Get the authenticated user model row.
      */
     protected function api_user()
