@@ -1,5 +1,33 @@
-﻿import Link from "next/link";
+﻿"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { BarChart3, Brain, Globe, Lock, Zap, ArrowRight, CheckCircle2, Star } from "lucide-react";
+import { api } from "@/lib/api";
+
+interface CmsMenuItem {
+  id: string;
+  label: string;
+  url: string;
+  target: "_self" | "_blank";
+  status: string;
+}
+
+interface FooterColumn {
+  title: string;
+  links: { label: string; url: string }[];
+}
+
+interface SocialLink {
+  platform: string;
+  url: string;
+}
+
+interface FooterConfig {
+  columns: FooterColumn[];
+  copyright: string;
+  social_links: SocialLink[];
+}
 
 const features = [
   { icon: "BarChart3", title: "Advanced Analytics", desc: "Descriptive, inferential, correlation and regression analysis all built in." },
@@ -26,6 +54,18 @@ const plans = [
 ];
 
 export default function LandingPage() {
+  const [menuItems, setMenuItems] = useState<CmsMenuItem[]>([]);
+  const [footer, setFooter] = useState<FooterConfig | null>(null);
+
+  useEffect(() => {
+    api.publicCms.menus().then((data) => {
+      if (Array.isArray(data)) setMenuItems(data.filter((m: CmsMenuItem) => m.status === "active"));
+    }).catch(() => { });
+    api.publicCms.footer().then((data) => {
+      if (data && typeof data === "object") setFooter(data as FooterConfig);
+    }).catch(() => { });
+  }, []);
+
   return (
     <div className="min-h-screen bg-white">
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-100">
@@ -37,6 +77,9 @@ export default function LandingPage() {
           <div className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">Features</a>
             <a href="#pricing" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">Pricing</a>
+            {menuItems.map((item) => (
+              <Link key={item.id} href={item.url} target={item.target} className="text-sm text-slate-600 hover:text-slate-900 transition-colors">{item.label}</Link>
+            ))}
             <Link href="/login" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">Sign in</Link>
             <Link href="/register" className="h-9 px-4 inline-flex items-center rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors">Get Started</Link>
           </div>
@@ -126,12 +169,35 @@ export default function LandingPage() {
       </section>
 
       <footer className="border-t border-slate-200 py-12">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center font-bold text-white text-[10px]">P</div>
-            <span className="text-sm font-semibold text-slate-900">PrimoData Analytics</span>
+        <div className="max-w-7xl mx-auto px-6">
+          {footer && footer.columns.length > 0 && (
+            <div className="grid md:grid-cols-4 gap-8 mb-8">
+              {footer.columns.map((col, i) => (
+                <div key={i}>
+                  <h4 className="text-sm font-semibold text-slate-900 mb-3">{col.title}</h4>
+                  <ul className="space-y-2">
+                    {col.links.map((link, j) => (
+                      <li key={j}><Link href={link.url} className="text-sm text-slate-500 hover:text-slate-700 transition-colors">{link.label}</Link></li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
+          {footer && footer.social_links.length > 0 && (
+            <div className="flex items-center gap-4 mb-6">
+              {footer.social_links.map((s, i) => (
+                <a key={i} href={s.url} target="_blank" rel="noopener noreferrer" className="text-sm text-slate-400 hover:text-violet-600 capitalize transition-colors">{s.platform}</a>
+              ))}
+            </div>
+          )}
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center font-bold text-white text-[10px]">P</div>
+              <span className="text-sm font-semibold text-slate-900">PrimoData Analytics</span>
+            </div>
+            <p className="text-xs text-slate-500">{footer?.copyright || "© 2025 PrimoData Analytics. Built for Indian researchers."}</p>
           </div>
-          <p className="text-xs text-slate-500">2025 PrimoData Analytics. Built for Indian researchers.</p>
         </div>
       </footer>
     </div>
