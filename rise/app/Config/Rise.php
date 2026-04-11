@@ -28,7 +28,10 @@ class Rise extends BaseConfig {
         "cron",
         "notifications/count_notifications", "notifications/get_notifications",
         "messages/count_notifications",
-        "microsoft_api/save_outlook_smtp_access_token"
+        "microsoft_api/save_outlook_smtp_access_token",
+        "api/v1/*", "api/v1/auth/*", "api/v1/surveys/*", "api/v1/responses/*",
+        "api/v1/analysis/*", "api/v1/exports/*", "api/v1/subscriptions/*",
+        "api/v1/admin/*", "api/v1/public/*"
     );
 
     public function __construct() {
