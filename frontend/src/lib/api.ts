@@ -162,6 +162,135 @@ export const publicCms = {
     page: (slug: string) => request("GET", `/public/cms/pages/${slug}`),
 };
 
+// ── RISE CRM Modules (Phase H) ──────────────────
+
+function crudModule(base: string) {
+    return {
+        list: (params?: Record<string, string>) => {
+            const qs = params ? "?" + new URLSearchParams(params).toString() : "";
+            return request("GET", `${base}${qs}`);
+        },
+        get: (id: number) => request("GET", `${base}/${id}`),
+        create: (data: Record<string, unknown>) => request("POST", base, data),
+        update: (id: number, data: Record<string, unknown>) => request("PUT", `${base}/${id}`, data),
+        remove: (id: number) => request("DELETE", `${base}/${id}`),
+    };
+}
+
+export const projects = {
+    ...crudModule("/projects"),
+    members: (id: number) => request("GET", `/projects/${id}/members`),
+    milestones: (id: number) => request("GET", `/projects/${id}/milestones`),
+};
+
+export const tasks = {
+    ...crudModule("/tasks"),
+    changeStatus: (id: number, statusId: number) => request("POST", `/tasks/${id}/status`, { status_id: statusId }),
+    statuses: () => request("GET", "/tasks/statuses"),
+};
+
+export const invoices = {
+    ...crudModule("/invoices"),
+    payments: (id: number) => request("GET", `/invoices/${id}/payments`),
+    addPayment: (id: number, data: Record<string, unknown>) => request("POST", `/invoices/${id}/payments`, data),
+};
+
+export const clients = {
+    ...crudModule("/clients"),
+    contacts: (id: number) => request("GET", `/clients/${id}/contacts`),
+    groups: () => request("GET", "/clients/groups"),
+};
+
+export const leads = {
+    ...crudModule("/leads"),
+    statuses: () => request("GET", "/leads/statuses"),
+    sources: () => request("GET", "/leads/sources"),
+};
+
+export const expenses = {
+    ...crudModule("/expenses"),
+    categories: () => request("GET", "/expenses/categories"),
+};
+
+export const tickets = {
+    ...crudModule("/tickets"),
+    comments: (id: number) => request("GET", `/tickets/${id}/comments`),
+    addComment: (id: number, data: Record<string, unknown>) => request("POST", `/tickets/${id}/comments`, data),
+    types: () => request("GET", "/tickets/types"),
+};
+
+export const events = crudModule("/events");
+
+export const team = crudModule("/team");
+
+export const timesheets = crudModule("/timesheets");
+
+export const attendance = {
+    list: (params?: Record<string, string>) => {
+        const qs = params ? "?" + new URLSearchParams(params).toString() : "";
+        return request("GET", `/attendance${qs}`);
+    },
+    status: () => request("GET", "/attendance/status"),
+    clockIn: (note?: string) => request("POST", "/attendance/clock-in", note ? { note } : {}),
+    clockOut: () => request("POST", "/attendance/clock-out"),
+};
+
+export const leaves = {
+    list: (params?: Record<string, string>) => {
+        const qs = params ? "?" + new URLSearchParams(params).toString() : "";
+        return request("GET", `/leaves${qs}`);
+    },
+    get: (id: number) => request("GET", `/leaves/${id}`),
+    create: (data: Record<string, unknown>) => request("POST", "/leaves", data),
+    approve: (id: number) => request("POST", `/leaves/${id}/approve`),
+    reject: (id: number) => request("POST", `/leaves/${id}/reject`),
+    types: () => request("GET", "/leaves/types"),
+};
+
+export const estimates = crudModule("/estimates");
+export const contracts = crudModule("/contracts");
+export const proposals = crudModule("/proposals");
+
+export const orders = {
+    ...crudModule("/orders"),
+    statuses: () => request("GET", "/orders/statuses"),
+};
+
+export const messages = {
+    list: () => request("GET", "/messages"),
+    get: (id: number) => request("GET", `/messages/${id}`),
+    create: (data: Record<string, unknown>) => request("POST", "/messages", data),
+    reply: (id: number, data: Record<string, unknown>) => request("POST", `/messages/${id}/reply`, data),
+    remove: (id: number) => request("DELETE", `/messages/${id}`),
+};
+
+export const announcements = crudModule("/announcements");
+export const notes = crudModule("/notes");
+
+export const todo = {
+    list: () => request("GET", "/todo"),
+    create: (data: Record<string, unknown>) => request("POST", "/todo", data),
+    update: (id: number, data: Record<string, unknown>) => request("PUT", `/todo/${id}`, data),
+    toggle: (id: number) => request("POST", `/todo/${id}/toggle`),
+    remove: (id: number) => request("DELETE", `/todo/${id}`),
+};
+
+export const reports = {
+    overview: () => request("GET", "/reports/overview"),
+    revenue: (year?: number) => request("GET", `/reports/revenue${year ? "?year=" + year : ""}`),
+    projectStatus: () => request("GET", "/reports/project-status"),
+    taskSummary: () => request("GET", "/reports/task-summary"),
+};
+
+export const settings = {
+    list: () => request("GET", "/settings"),
+    get: (key: string) => request("GET", `/settings/${key}`),
+    update: (key: string, value: string) => request("PUT", `/settings/${key}`, { value }),
+    batchUpdate: (s: Record<string, string>) => request("PUT", "/settings", { settings: s }),
+};
+
+export const roles = crudModule("/roles");
+
 // Unified api object for convenient imports: import { api } from "@/lib/api"
 export const api = {
     auth,
@@ -176,4 +305,27 @@ export const api = {
     adminCms,
     publicCms,
     public: publicApi,
+    projects,
+    tasks,
+    invoices,
+    clients,
+    leads,
+    expenses,
+    tickets,
+    events,
+    team,
+    timesheets,
+    attendance,
+    leaves,
+    estimates,
+    contracts,
+    proposals,
+    orders,
+    messages,
+    announcements,
+    notes,
+    todo,
+    reports,
+    settings,
+    roles,
 };

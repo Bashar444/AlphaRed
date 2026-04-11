@@ -6,16 +6,34 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import {
     BarChart3,
+    Briefcase,
+    Building2,
+    Calendar,
+    CalendarOff,
+    CheckSquare,
     ClipboardList,
+    Clock,
+    CreditCard,
+    Database,
+    DollarSign,
     Download,
+    FileCheck,
+    FileSpreadsheet,
     FileText,
     Key,
     LayoutDashboard,
+    ListTodo,
     LogOut,
+    Megaphone,
+    MessageSquare,
+    ScrollText,
     Shield,
+    ShoppingCart,
+    StickyNote,
+    Target,
+    Ticket,
+    Timer,
     Users,
-    CreditCard,
-    Database,
 } from "lucide-react";
 
 const mainNav = [
@@ -25,6 +43,35 @@ const mainNav = [
     { href: "/dashboard/exports", label: "Exports", icon: Download },
     { href: "/dashboard/api-keys", label: "API Keys", icon: Key },
     { href: "/dashboard/subscription", label: "Subscription", icon: CreditCard },
+];
+
+const businessNav = [
+    { href: "/dashboard/projects", label: "Projects", icon: Briefcase },
+    { href: "/dashboard/tasks", label: "Tasks", icon: ListTodo },
+    { href: "/dashboard/invoices", label: "Invoices", icon: FileText },
+    { href: "/dashboard/clients", label: "Clients", icon: Building2 },
+    { href: "/dashboard/leads", label: "Leads", icon: Target },
+    { href: "/dashboard/expenses", label: "Expenses", icon: DollarSign },
+    { href: "/dashboard/tickets", label: "Tickets", icon: Ticket },
+    { href: "/dashboard/events", label: "Events", icon: Calendar },
+    { href: "/dashboard/estimates", label: "Estimates", icon: FileSpreadsheet },
+    { href: "/dashboard/contracts", label: "Contracts", icon: ScrollText },
+    { href: "/dashboard/proposals", label: "Proposals", icon: FileCheck },
+    { href: "/dashboard/orders", label: "Orders", icon: ShoppingCart },
+];
+
+const teamNav = [
+    { href: "/dashboard/team", label: "Team", icon: Users },
+    { href: "/dashboard/attendance", label: "Attendance", icon: Clock },
+    { href: "/dashboard/timesheets", label: "Timesheets", icon: Timer },
+    { href: "/dashboard/leaves", label: "Leaves", icon: CalendarOff },
+];
+
+const toolsNav = [
+    { href: "/dashboard/messages", label: "Messages", icon: MessageSquare },
+    { href: "/dashboard/announcements", label: "Announcements", icon: Megaphone },
+    { href: "/dashboard/notes", label: "Notes", icon: StickyNote },
+    { href: "/dashboard/todo", label: "To-Do", icon: CheckSquare },
 ];
 
 const adminNav = [
@@ -56,6 +103,78 @@ export function Sidebar() {
                     Platform
                 </p>
                 {mainNav.map((item) => {
+                    const active = pathname === item.href || pathname?.startsWith(item.href + "/");
+                    return (
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            className={cn(
+                                "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                                active
+                                    ? "bg-violet-600/20 text-violet-400"
+                                    : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                            )}
+                        >
+                            <item.icon className="w-4 h-4" />
+                            {item.label}
+                        </Link>
+                    );
+                })}
+
+                {/* Business section */}
+                <div className="pt-4" />
+                <p className="px-3 text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">
+                    Business
+                </p>
+                {businessNav.map((item) => {
+                    const active = pathname === item.href || pathname?.startsWith(item.href + "/");
+                    return (
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            className={cn(
+                                "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                                active
+                                    ? "bg-violet-600/20 text-violet-400"
+                                    : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                            )}
+                        >
+                            <item.icon className="w-4 h-4" />
+                            {item.label}
+                        </Link>
+                    );
+                })}
+
+                {/* Team section */}
+                <div className="pt-4" />
+                <p className="px-3 text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">
+                    Team
+                </p>
+                {teamNav.map((item) => {
+                    const active = pathname === item.href || pathname?.startsWith(item.href + "/");
+                    return (
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            className={cn(
+                                "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                                active
+                                    ? "bg-violet-600/20 text-violet-400"
+                                    : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                            )}
+                        >
+                            <item.icon className="w-4 h-4" />
+                            {item.label}
+                        </Link>
+                    );
+                })}
+
+                {/* Tools section */}
+                <div className="pt-4" />
+                <p className="px-3 text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">
+                    Tools
+                </p>
+                {toolsNav.map((item) => {
                     const active = pathname === item.href || pathname?.startsWith(item.href + "/");
                     return (
                         <Link
