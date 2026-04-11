@@ -160,6 +160,12 @@ $routes->group('api/v1', ['namespace' => 'App\Controllers\Api'], function ($rout
     $routes->post('admin/datasets/(:num)/unpublish', 'Admin::unpublish_dataset/$1');
     $routes->get('admin/revenue', 'Admin::revenue');
 
+    // Admin — Users Management
+    $routes->get('admin/users', 'AdminUsers::index');
+    $routes->get('admin/users/(:num)', 'AdminUsers::show/$1');
+    $routes->post('admin/users/(:num)/suspend', 'AdminUsers::suspend/$1');
+    $routes->post('admin/users/(:num)/activate', 'AdminUsers::activate/$1');
+
     // Public (no auth)
     $routes->get('public/datasets', 'PublicApi::datasets');
     $routes->get('public/datasets/categories', 'PublicApi::categories');

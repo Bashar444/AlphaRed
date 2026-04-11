@@ -121,6 +121,17 @@ export const publicApi = {
     submitSurvey: (id: number, data: Record<string, unknown>) => request("POST", `/public/surveys/${id}/submit`, data),
 };
 
+// ── Admin Users ─────────────────────────────────
+export const adminUsers = {
+    list: (params?: Record<string, string>) => {
+        const qs = params ? "?" + new URLSearchParams(params).toString() : "";
+        return request("GET", `/admin/users${qs}`);
+    },
+    get: (id: number) => request("GET", `/admin/users/${id}`),
+    suspend: (id: number) => request("POST", `/admin/users/${id}/suspend`),
+    activate: (id: number) => request("POST", `/admin/users/${id}/activate`),
+};
+
 // Unified api object for convenient imports: import { api } from "@/lib/api"
 export const api = {
     auth,
@@ -130,5 +141,6 @@ export const api = {
     exports: exports_,
     subscriptions,
     admin,
+    adminUsers,
     public: publicApi,
 };
