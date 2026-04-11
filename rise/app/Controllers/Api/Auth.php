@@ -23,13 +23,25 @@ class Auth extends Api_base
             return $this->fail('Email and password are required.');
         }
 
-        $user = $this->Users_model->get_details(['email' => $email])->getRow();
+        // Direct query by email — Users_model::get_details() does not support email filter
+        $users_table = $this->Users_model->db->prefixTable('users');
+        $user = $this->Users_model->db
+            ->query("SELECT * FROM $users_table WHERE email=? AND deleted=0 LIMIT 1", [$email])
+            ->getRow();
 
-        if (!$user || !password_verify($password, $user->password)) {
+        if (!$user) {
             return $this->fail('Invalid credentials.', 401);
         }
 
-        if ($user->status !== 'active') {
+        // RISE supports both bcrypt and legacy MD5 passwords from installer
+        $password_ok = (strlen($user->password) === 60 && password_verify($password, $user->password))
+                    || $user->password === md5($password);
+
+        if (!$password_ok) {
+            return $this->fail('Invalid credentials.', 401);
+        }
+
+        if (!empty($user->status) && $user->status !== 'active') {
             return $this->fail('Account is not active.', 403);
         }
 
@@ -65,8 +77,11 @@ class Auth extends Api_base
             return $this->fail(implode(' ', $this->validator->getErrors()));
         }
 
-        // Check duplicate email
-        $existing = $this->Users_model->get_details(['email' => trim($body['email'])])->getRow();
+        // Check duplicate email — direct query (get_details doesn't support email filter)
+        $users_table = $this->Users_model->db->prefixTable('users');
+        $existing = $this->Users_model->db
+            ->query("SELECT id FROM $users_table WHERE email=? AND deleted=0 LIMIT 1", [trim($body['email'])])
+            ->getRow();
         if ($existing) {
             return $this->fail('Email already registered.');
         }

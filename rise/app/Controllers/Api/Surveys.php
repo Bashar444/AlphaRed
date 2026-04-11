@@ -120,10 +120,16 @@ class Surveys extends Api_base
 
         $rows = $this->Primo_questions_model->get_details(['survey_id' => $survey_id])->getResult();
         $questions = array_map(fn($q) => [
-            'id'       => (int) $q->id,
+            'id'            => (int) $q->id,
+            // Frontend field names
+            'question_text' => $q->text,
+            'question_type' => $q->type,
+            'is_required'   => (int) $q->required,
+            'sort_order'    => (int) $q->sort,
+            'options'       => $q->options ? json_decode($q->options, true) : null,
+            // Backend field names (for compatibility)
             'text'     => $q->text,
             'type'     => $q->type,
-            'options'  => $q->options ? json_decode($q->options, true) : null,
             'required' => (bool) $q->required,
             'sort'     => (int) $q->sort,
         ], $rows);
@@ -147,13 +153,14 @@ class Surveys extends Api_base
         }
 
         $body = $this->request->getJSON(true) ?? [];
+        // Accept both frontend naming (question_text) and backend naming (text)
         $data = [
             'survey_id' => $survey_id,
-            'text'      => $body['text'] ?? '',
-            'type'      => $body['type'] ?? 'text',
+            'text'      => $body['question_text'] ?? $body['text'] ?? '',
+            'type'      => $body['question_type'] ?? $body['type'] ?? 'text',
             'options'   => isset($body['options']) ? json_encode($body['options']) : null,
-            'required'  => !empty($body['required']) ? 1 : 0,
-            'sort'      => $this->Primo_questions_model->get_max_sort($survey_id) + 1,
+            'required'  => !empty($body['is_required'] ?? $body['required'] ?? 0) ? 1 : 0,
+            'sort'      => !empty($body['sort_order']) ? (int)$body['sort_order'] : $this->Primo_questions_model->get_max_sort($survey_id) + 1,
         ];
 
         $qid = $this->Primo_questions_model->ci_save($data);
@@ -171,8 +178,20 @@ class Surveys extends Api_base
         }
 
         $body = $this->request->getJSON(true) ?? [];
-        $allowed = ['text', 'type', 'required'];
-        $data = array_intersect_key($body, array_flip($allowed));
+        $data = [];
+        // Accept both frontend naming and backend naming
+        if (isset($body['question_text']) || isset($body['text'])) {
+            $data['text'] = $body['question_text'] ?? $body['text'];
+        }
+        if (isset($body['question_type']) || isset($body['type'])) {
+            $data['type'] = $body['question_type'] ?? $body['type'];
+        }
+        if (isset($body['is_required']) || isset($body['required'])) {
+            $data['required'] = !empty($body['is_required'] ?? $body['required']) ? 1 : 0;
+        }
+        if (isset($body['sort_order']) || isset($body['sort'])) {
+            $data['sort'] = (int)($body['sort_order'] ?? $body['sort']);
+        }
         if (isset($body['options'])) {
             $data['options'] = json_encode($body['options']);
         }
@@ -283,6 +302,8 @@ class Surveys extends Api_base
             'status'           => $s->status,
             'target_responses' => (int) $s->target_responses,
             'collected_count'  => (int) ($s->collected_count ?? 0),
+            'response_count'   => (int) ($s->collected_count ?? 0),   // alias for frontend
+            'question_count'   => (int) $this->Primo_questions_model->get_question_count($s->id),
             'language'         => $s->language ?? 'en',
             'targeting'        => $s->targeting ? json_decode($s->targeting, true) : null,
             'created_at'       => $s->created_at,
