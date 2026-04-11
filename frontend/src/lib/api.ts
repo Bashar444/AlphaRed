@@ -95,6 +95,9 @@ export const subscriptions = {
 // ── Admin ───────────────────────────────────────
 export const admin = {
     dashboard: () => request("GET", "/admin/dashboard"),
+    stats: () => request("GET", "/admin/dashboard/stats"),
+    charts: (type: string) => request("GET", `/admin/dashboard/charts?type=${type}`),
+    activity: () => request("GET", "/admin/dashboard/activity"),
     respondents: () => request("GET", "/admin/respondents"),
     suspendRespondent: (id: number) => request("POST", `/admin/respondents/${id}/suspend`),
     datasets: () => request("GET", "/admin/datasets"),

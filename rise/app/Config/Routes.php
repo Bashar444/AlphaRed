@@ -150,6 +150,9 @@ $routes->group('api/v1', ['namespace' => 'App\Controllers\Api'], function ($rout
 
     // Admin
     $routes->get('admin/dashboard', 'Admin::dashboard');
+    $routes->get('admin/dashboard/stats', 'Admin::stats');
+    $routes->get('admin/dashboard/charts', 'Admin::charts');
+    $routes->get('admin/dashboard/activity', 'Admin::activity');
     $routes->get('admin/respondents', 'Admin::respondents');
     $routes->post('admin/respondents/(:num)/suspend', 'Admin::suspend_respondent/$1');
     $routes->get('admin/datasets', 'Admin::datasets');
