@@ -15,7 +15,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "PrimoData — Survey Analytics Platform",
+  title: "PrimoData Analytics",
   description: "Enterprise survey analytics powered by AI. Create, distribute, and analyze surveys with statistical rigor.",
 };
 
