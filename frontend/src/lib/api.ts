@@ -140,6 +140,28 @@ export const apiKeys = {
     remove: (id: number) => request("DELETE", `/api-keys/${id}`),
 };
 
+// ── Admin CMS ───────────────────────────────────
+export const adminCms = {
+    menus: () => request("GET", "/admin/cms/menus"),
+    saveMenus: (data: Record<string, unknown>) => request("POST", "/admin/cms/menus", data),
+    pages: () => request("GET", "/admin/cms/pages"),
+    createPage: (data: Record<string, unknown>) => request("POST", "/admin/cms/pages", data),
+    getPage: (id: number) => request("GET", `/admin/cms/pages/${id}`),
+    updatePage: (id: number, data: Record<string, unknown>) => request("PUT", `/admin/cms/pages/${id}`, data),
+    deletePage: (id: number) => request("DELETE", `/admin/cms/pages/${id}`),
+    getSections: (pageId: number) => request("GET", `/admin/cms/pages/${pageId}/sections`),
+    saveSections: (pageId: number, sections: unknown[]) => request("POST", `/admin/cms/pages/${pageId}/sections`, { sections }),
+    getFooter: () => request("GET", "/admin/cms/footer"),
+    saveFooter: (data: Record<string, unknown>) => request("POST", "/admin/cms/footer", data),
+};
+
+// ── Public CMS ──────────────────────────────────
+export const publicCms = {
+    menus: () => request("GET", "/public/cms/menus"),
+    footer: () => request("GET", "/public/cms/footer"),
+    page: (slug: string) => request("GET", `/public/cms/pages/${slug}`),
+};
+
 // Unified api object for convenient imports: import { api } from "@/lib/api"
 export const api = {
     auth,
@@ -151,5 +173,7 @@ export const api = {
     admin,
     adminUsers,
     apiKeys,
+    adminCms,
+    publicCms,
     public: publicApi,
 };

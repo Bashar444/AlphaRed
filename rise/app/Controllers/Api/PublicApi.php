@@ -173,4 +173,74 @@ class PublicApi extends Api_base
             'quality_score' => $quality['score'] ?? 0,
         ], 'Thank you for your response!');
     }
+
+    // ─── CMS Public Endpoints ───────────────────
+
+    /**
+     * GET /api/v1/public/cms/menus
+     */
+    public function cms_menus()
+    {
+        $rows = $this->Primo_menus_model->get_details([
+            'location' => 'header',
+            'status'   => 'active',
+        ])->getResult();
+
+        $menu = [];
+        if (!empty($rows)) {
+            $first = $rows[0];
+            $menu = json_decode($first->items, true) ?: [];
+        }
+
+        return $this->ok($menu);
+    }
+
+    /**
+     * GET /api/v1/public/cms/footer
+     */
+    public function cms_footer()
+    {
+        $json = $this->Primo_site_settings_model->get_setting('footer_config');
+        $footer = $json ? json_decode($json, true) : [
+            'columns'      => [],
+            'copyright'    => '© 2026 PrimoData Analytics. All rights reserved.',
+            'social_links' => [],
+        ];
+
+        return $this->ok($footer);
+    }
+
+    /**
+     * GET /api/v1/public/cms/pages/:slug
+     */
+    public function cms_page($slug = '')
+    {
+        if (!$slug) return $this->fail('Slug is required');
+
+        $table = $this->db->prefixTable('pages');
+        $page = $this->db->query(
+            "SELECT id, title, slug, meta_title, meta_description, status, full_width, hide_topbar
+             FROM {$table}
+             WHERE slug = ? AND status = 'published' AND deleted = 0",
+            [$slug]
+        )->getRowArray();
+
+        if (!$page) return $this->notFound();
+
+        // Load sections
+        $sections = $this->Primo_page_sections_model->get_details([
+            'page_id' => $page['id'],
+        ])->getResult();
+
+        $page['sections'] = array_map(fn($s) => [
+            'id'         => (int) $s->id,
+            'type'       => $s->type,
+            'title'      => $s->title,
+            'content'    => json_decode($s->content, true) ?: [],
+            'sort_order' => (int) $s->sort_order,
+            'status'     => $s->status,
+        ], array_filter($sections, fn($s) => $s->status === 'active'));
+
+        return $this->ok($page);
+    }
 }

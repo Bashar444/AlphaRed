@@ -172,12 +172,30 @@ $routes->group('api/v1', ['namespace' => 'App\Controllers\Api'], function ($rout
     $routes->post('api-keys/(:num)/revoke', 'ApiKeys::revoke/$1');
     $routes->delete('api-keys/(:num)', 'ApiKeys::delete/$1');
 
+    // Admin CMS
+    $routes->get('admin/cms/menus', 'AdminCms::menus');
+    $routes->post('admin/cms/menus', 'AdminCms::save_menus');
+    $routes->get('admin/cms/pages', 'AdminCms::pages');
+    $routes->post('admin/cms/pages', 'AdminCms::create_page');
+    $routes->get('admin/cms/pages/(:num)', 'AdminCms::get_page/$1');
+    $routes->put('admin/cms/pages/(:num)', 'AdminCms::update_page/$1');
+    $routes->delete('admin/cms/pages/(:num)', 'AdminCms::delete_page/$1');
+    $routes->get('admin/cms/pages/(:num)/sections', 'AdminCms::get_sections/$1');
+    $routes->post('admin/cms/pages/(:num)/sections', 'AdminCms::save_sections/$1');
+    $routes->get('admin/cms/footer', 'AdminCms::get_footer');
+    $routes->post('admin/cms/footer', 'AdminCms::save_footer');
+
     // Public (no auth)
     $routes->get('public/datasets', 'PublicApi::datasets');
     $routes->get('public/datasets/categories', 'PublicApi::categories');
     $routes->get('public/datasets/(:num)', 'PublicApi::dataset/$1');
     $routes->get('public/surveys/(:num)', 'PublicApi::survey/$1');
     $routes->post('public/surveys/(:num)/submit', 'PublicApi::submit_survey/$1');
+
+    // Public CMS (no auth)
+    $routes->get('public/cms/menus', 'PublicApi::cms_menus');
+    $routes->get('public/cms/footer', 'PublicApi::cms_footer');
+    $routes->get('public/cms/pages/(:segment)', 'PublicApi::cms_page/$1');
 
     // Plans (public, no auth)
     $routes->get('public/plans', 'Subscriptions::plans');

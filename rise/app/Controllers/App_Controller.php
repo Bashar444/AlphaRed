@@ -95,6 +95,9 @@ class App_Controller extends Controller {
     public $Primo_subscriptions_model;
     public $Primo_usage_logs_model;
     public $Primo_api_keys_model;
+    public $Primo_menus_model;
+    public $Primo_page_sections_model;
+    public $Primo_site_settings_model;
     
     public function __construct() {
         //main template to make frame of this app
@@ -217,7 +220,10 @@ class App_Controller extends Controller {
             'Primo_exports_model',
             'Primo_subscriptions_model',
             'Primo_usage_logs_model',
-            'Primo_api_keys_model'
+            'Primo_api_keys_model',
+            'Primo_menus_model',
+            'Primo_page_sections_model',
+            'Primo_site_settings_model'
         );
     }
 
