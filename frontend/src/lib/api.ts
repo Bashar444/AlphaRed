@@ -132,6 +132,14 @@ export const adminUsers = {
     activate: (id: number) => request("POST", `/admin/users/${id}/activate`),
 };
 
+// ── API Keys ────────────────────────────────────
+export const apiKeys = {
+    list: () => request("GET", "/api-keys"),
+    create: (name: string, expiresAt?: string) => request("POST", "/api-keys", { name, expires_at: expiresAt }),
+    revoke: (id: number) => request("POST", `/api-keys/${id}/revoke`),
+    remove: (id: number) => request("DELETE", `/api-keys/${id}`),
+};
+
 // Unified api object for convenient imports: import { api } from "@/lib/api"
 export const api = {
     auth,
@@ -142,5 +150,6 @@ export const api = {
     subscriptions,
     admin,
     adminUsers,
+    apiKeys,
     public: publicApi,
 };

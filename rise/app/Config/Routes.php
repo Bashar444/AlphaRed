@@ -166,6 +166,12 @@ $routes->group('api/v1', ['namespace' => 'App\Controllers\Api'], function ($rout
     $routes->post('admin/users/(:num)/suspend', 'AdminUsers::suspend/$1');
     $routes->post('admin/users/(:num)/activate', 'AdminUsers::activate/$1');
 
+    // API Keys
+    $routes->get('api-keys', 'ApiKeys::index');
+    $routes->post('api-keys', 'ApiKeys::create');
+    $routes->post('api-keys/(:num)/revoke', 'ApiKeys::revoke/$1');
+    $routes->delete('api-keys/(:num)', 'ApiKeys::delete/$1');
+
     // Public (no auth)
     $routes->get('public/datasets', 'PublicApi::datasets');
     $routes->get('public/datasets/categories', 'PublicApi::categories');

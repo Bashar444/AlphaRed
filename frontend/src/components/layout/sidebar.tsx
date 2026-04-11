@@ -28,6 +28,7 @@ const mainNav = [
 
 const adminNav = [
     { href: "/dashboard/admin", label: "Admin Home", icon: Shield },
+    { href: "/dashboard/admin/users", label: "Users", icon: Users },
     { href: "/dashboard/admin/respondents", label: "Respondents", icon: Users },
     { href: "/dashboard/admin/datasets", label: "Datasets", icon: Database },
     { href: "/dashboard/admin/revenue", label: "Revenue", icon: BarChart3 },
