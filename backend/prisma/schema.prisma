@@ -1,0 +1,742 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ═══════════════════════════════════════════
+// AUTH & USERS
+// ═══════════════════════════════════════════
+
+model User {
+  id                  String             @id @default(cuid())
+  email               String             @unique
+  name                String
+  avatarUrl           String?
+  phone               String?
+  role                UserRole           @default(USER)
+  status              UserStatus         @default(ACTIVE)
+  emailVerified       DateTime?
+  passwordHash        String?
+  organization        String?
+  designation         String?
+  country             String?
+  state               String?
+  preferredLanguage   String             @default("en")
+  timezone            String             @default("Asia/Kolkata")
+  lastLoginAt         DateTime?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  subscription        Subscription?
+  surveys             Survey[]
+  apiKeys             ApiKey[]
+  teamMemberships     TeamMember[]
+  accounts            Account[]
+  sessions            Session[]
+  usageLogs           UsageLog[]
+  auditLogs           AuditLog[]
+  notifications       Notification[]
+  leads               Lead[]             @relation("AgentLeads")
+  assignedLeads       Lead[]             @relation("AssignedLeads")
+  whiteLabel          WhiteLabel?
+}
+
+enum UserRole {
+  SUPERADMIN
+  MANAGER
+  AGENT
+  USER
+  RESPONDENT
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id            String   @id @default(cuid())
+  sessionToken  String   @unique
+  userId        String
+  expires       DateTime
+  ipAddress     String?
+  userAgent     String?
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+}
+
+// ═══════════════════════════════════════════
+// TEAMS (Enterprise)
+// ═══════════════════════════════════════════
+
+model Team {
+  id        String       @id @default(cuid())
+  name      String
+  slug      String       @unique
+  ownerId   String
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  members   TeamMember[]
+  surveys   Survey[]
+}
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  teamId    String
+  userId    String
+  role      TeamRole @default(VIEWER)
+  joinedAt  DateTime @default(now())
+  team      Team     @relation(fields: [teamId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([teamId, userId])
+}
+
+enum TeamRole {
+  OWNER
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+// ═══════════════════════════════════════════
+// PLANS, SUBSCRIPTIONS & BILLING
+// ═══════════════════════════════════════════
+
+model Plan {
+  id              String          @id @default(cuid())
+  name            String          @unique
+  slug            String          @unique
+  description     String?
+  priceInr        Float           @default(0)
+  priceUsd        Float           @default(0)
+  billingCycle    BillingCycle    @default(MONTHLY)
+  isActive        Boolean         @default(true)
+  isFeatured      Boolean         @default(false)
+  sortOrder       Int             @default(0)
+  trialDays       Int             @default(0)
+  maxSurveys      Int             @default(1)
+  maxResponses    Int             @default(50)
+  maxQuestions    Int             @default(10)
+  maxTeamMembers  Int             @default(0)
+  features        Json
+  supportLevel    String          @default("community")
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  subscriptions   Subscription[]
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  userId               String             @unique
+  planId               String
+  billingCycle         BillingCycle       @default(MONTHLY)
+  status               SubscriptionStatus @default(PENDING_APPROVAL)
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  trialEndsAt          DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+  cancelledAt          DateTime?
+  approvedBy           String?
+  approvedAt           DateTime?
+  razorpaySubId        String?
+  razorpayCustomerId   String?
+  stripeSubId          String?
+  stripeCustomerId     String?
+  discountCode         String?
+  discountPercent      Float?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  user                 User               @relation(fields: [userId], references: [id])
+  plan                 Plan               @relation(fields: [planId], references: [id])
+  invoices             Invoice[]
+}
+
+enum BillingCycle {
+  MONTHLY
+  ANNUAL
+}
+
+enum SubscriptionStatus {
+  PENDING_APPROVAL
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELLED
+  PAUSED
+  UNPAID
+  REJECTED
+}
+
+model Invoice {
+  id              String        @id @default(cuid())
+  subscriptionId  String
+  invoiceNumber   String        @unique
+  amount          Float
+  tax             Float         @default(0)
+  currency        String        @default("INR")
+  status          InvoiceStatus @default(PENDING)
+  dueDate         DateTime?
+  paidAt          DateTime?
+  paymentMethod   String?
+  razorpayPayId   String?
+  stripePayId     String?
+  invoicePdfUrl   String?
+  notes           String?
+  createdAt       DateTime      @default(now())
+  subscription    Subscription  @relation(fields: [subscriptionId], references: [id])
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  VOID
+}
+
+model DiscountCode {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  description String?
+  type        String    @default("percent")
+  value       Float
+  maxUses     Int?
+  usedCount   Int       @default(0)
+  validFrom   DateTime
+  validUntil  DateTime?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+}
+
+// ═══════════════════════════════════════════
+// SURVEYS & QUESTIONS
+// ═══════════════════════════════════════════
+
+model Survey {
+  id                 String        @id @default(cuid())
+  title              String
+  description        String?
+  status             SurveyStatus  @default(DRAFT)
+  targetResponses    Int           @default(100)
+  collectedCount     Int           @default(0)
+  validCount         Int           @default(0)
+  userId             String
+  teamId             String?
+  targeting          Json?
+  estimatedMinutes   Int           @default(5)
+  language           String        @default("en")
+  welcomeMessage     String?
+  thankYouMessage    String?
+  progressBar        Boolean       @default(true)
+  randomizeQuestions Boolean       @default(false)
+  allowAnonymous     Boolean       @default(true)
+  startsAt           DateTime?
+  endsAt             DateTime?
+  launchedAt         DateTime?
+  completedAt        DateTime?
+  category           String?
+  tags               String[]
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  user               User          @relation(fields: [userId], references: [id])
+  team               Team?         @relation(fields: [teamId], references: [id])
+  questions          Question[]
+  responses          Response[]
+  analysisReports    AnalysisReport[]
+  exports            Export[]
+  invitations        SurveyInvitation[]
+}
+
+enum SurveyStatus {
+  DRAFT
+  REVIEW
+  ACTIVE
+  PAUSED
+  COMPLETED
+  ARCHIVED
+}
+
+model Question {
+  id            String       @id @default(cuid())
+  surveyId      String
+  order         Int
+  type          QuestionType
+  text          String
+  description   String?
+  required      Boolean      @default(true)
+  options       Json?
+  validation    Json?
+  logic         Json?
+  mediaUrl      String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  survey        Survey       @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  answers       Answer[]
+}
+
+enum QuestionType {
+  SHORT_TEXT
+  LONG_TEXT
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  RATING
+  LIKERT
+  MATRIX
+  RANKING
+  NUMBER
+  DATE
+  EMAIL
+  DROPDOWN
+  FILE_UPLOAD
+  NET_PROMOTER
+  SLIDER
+  YES_NO
+  IMAGE_CHOICE
+}
+
+// ═══════════════════════════════════════════
+// RESPONDENTS & RESPONSES
+// ═══════════════════════════════════════════
+
+model Respondent {
+  id               String            @id @default(cuid())
+  email            String?
+  phoneHash        String?
+  name             String?
+  status           RespondentStatus  @default(PENDING)
+  kycStatus        KYCStatus         @default(PENDING)
+  qualityScore     Float             @default(1.0)
+  totalResponses   Int               @default(0)
+  acceptedCount    Int               @default(0)
+  rejectedCount    Int               @default(0)
+  demographics     Json
+  country          String?
+  state            String?
+  city             String?
+  verifiedAt       DateTime?
+  lastActiveAt     DateTime?
+  incentiveBalance Float             @default(0)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  responses        Response[]
+  payouts          RespondentPayout[]
+  invitations      SurveyInvitation[]
+}
+
+enum RespondentStatus {
+  PENDING
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  BANNED
+}
+
+enum KYCStatus {
+  PENDING
+  OTP_VERIFIED
+  FULL_VERIFIED
+  REJECTED
+  SUSPENDED
+}
+
+model RespondentPayout {
+  id            String     @id @default(cuid())
+  respondentId  String
+  amount        Float
+  method        String
+  status        String
+  processedAt   DateTime?
+  createdAt     DateTime   @default(now())
+  respondent    Respondent @relation(fields: [respondentId], references: [id])
+}
+
+model SurveyInvitation {
+  id            String     @id @default(cuid())
+  surveyId      String
+  respondentId  String
+  token         String     @unique @default(cuid())
+  status        String     @default("pending")
+  sentAt        DateTime?
+  openedAt      DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime   @default(now())
+
+  survey        Survey     @relation(fields: [surveyId], references: [id])
+  respondent    Respondent @relation(fields: [respondentId], references: [id])
+
+  @@unique([surveyId, respondentId])
+}
+
+model Response {
+  id              String          @id @default(cuid())
+  surveyId        String
+  respondentId    String
+  status          ResponseStatus  @default(PENDING)
+  qualityScore    Float?
+  qualityFlags    Json?
+  durationSecs    Int?
+  ipHash          String?
+  deviceHash      String?
+  userAgent       String?
+  completedAt     DateTime?
+  createdAt       DateTime        @default(now())
+
+  survey          Survey          @relation(fields: [surveyId], references: [id])
+  respondent      Respondent      @relation(fields: [respondentId], references: [id])
+  answers         Answer[]
+}
+
+enum ResponseStatus {
+  PENDING
+  COMPLETED
+  REJECTED
+  FLAGGED
+  DUPLICATE
+}
+
+model Answer {
+  id          String    @id @default(cuid())
+  responseId  String
+  questionId  String
+  value       Json
+  createdAt   DateTime  @default(now())
+
+  response    Response  @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  question    Question  @relation(fields: [questionId], references: [id])
+}
+
+// ═══════════════════════════════════════════
+// ANALYSIS & EXPORTS
+// ═══════════════════════════════════════════
+
+model AnalysisReport {
+  id            String          @id @default(cuid())
+  surveyId      String
+  status        AnalysisStatus  @default(PENDING)
+  results       Json?
+  aiNarrative   String?
+  triggeredBy   String?
+  createdAt     DateTime        @default(now())
+  completedAt   DateTime?
+  failedAt      DateTime?
+  errorMessage  String?
+
+  survey        Survey          @relation(fields: [surveyId], references: [id])
+  exports       Export[]
+}
+
+enum AnalysisStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+model Export {
+  id          String       @id @default(cuid())
+  surveyId    String
+  reportId    String?
+  userId      String
+  format      ExportFormat
+  fileUrl     String?
+  fileName    String?
+  fileSizeKb  Float?
+  status      ExportStatus @default(PENDING)
+  expiresAt   DateTime?
+  createdAt   DateTime     @default(now())
+
+  survey      Survey          @relation(fields: [surveyId], references: [id])
+  report      AnalysisReport? @relation(fields: [reportId], references: [id])
+}
+
+enum ExportFormat {
+  PDF
+  XLS
+  CSV
+  ZIP
+  JSON
+}
+
+enum ExportStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+  EXPIRED
+}
+
+// ═══════════════════════════════════════════
+// CRM & LEADS
+// ═══════════════════════════════════════════
+
+model Lead {
+  id              String      @id @default(cuid())
+  name            String
+  email           String
+  phone           String?
+  organization    String?
+  country         String?
+  planInterest    String?
+  message         String?
+  status          LeadStatus  @default(NEW)
+  source          String?
+  assignedToId    String?
+  createdById     String?
+  notes           String?
+  followUpAt      DateTime?
+  convertedAt     DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  assignedTo      User?       @relation("AssignedLeads", fields: [assignedToId], references: [id])
+  createdBy       User?       @relation("AgentLeads", fields: [createdById], references: [id])
+  activities      LeadActivity[]
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL_SENT
+  NEGOTIATION
+  CONVERTED
+  LOST
+}
+
+model LeadActivity {
+  id        String   @id @default(cuid())
+  leadId    String
+  type      String
+  note      String
+  createdBy String
+  createdAt DateTime @default(now())
+  lead      Lead     @relation(fields: [leadId], references: [id])
+}
+
+// ═══════════════════════════════════════════
+// PUBLIC DATA MARKETPLACE
+// ═══════════════════════════════════════════
+
+model PublicDataset {
+  id            String   @id @default(cuid())
+  title         String
+  slug          String   @unique
+  category      String
+  subCategory   String?
+  region        String
+  country       String?
+  state         String?
+  description   String
+  methodology   String?
+  data          Json
+  chartType     String   @default("bar")
+  source        String
+  sourceUrl     String?
+  year          Int
+  tags          String[]
+  featured      Boolean  @default(false)
+  published     Boolean  @default(true)
+  viewCount     Int      @default(0)
+  downloadCount Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// ═══════════════════════════════════════════
+// WHITE LABEL (Enterprise)
+// ═══════════════════════════════════════════
+
+model WhiteLabel {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  brandName     String
+  logoUrl       String?
+  faviconUrl    String?
+  primaryColor  String   @default("#2563eb")
+  customDomain  String?
+  emailFrom     String?
+  footerText    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id])
+}
+
+// ═══════════════════════════════════════════
+// ADMIN SETTINGS & CMS
+// ═══════════════════════════════════════════
+
+model AppSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  group     String
+  label     String?
+  updatedAt DateTime @updatedAt
+}
+
+model Module {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  label       String
+  description String?
+  isEnabled   Boolean  @default(true)
+  order       Int      @default(0)
+  icon        String?
+  updatedAt   DateTime @updatedAt
+}
+
+model Page {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  content     Json
+  metaTitle   String?
+  metaDesc    String?
+  published   Boolean  @default(false)
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model MenuItem {
+  id        String     @id @default(cuid())
+  menuId    String
+  label     String
+  url       String?
+  pageId    String?
+  order     Int        @default(0)
+  parentId  String?
+  target    String     @default("_self")
+  children  MenuItem[] @relation("MenuItemChildren")
+  parent    MenuItem?  @relation("MenuItemChildren", fields: [parentId], references: [id])
+  menu      Menu       @relation(fields: [menuId], references: [id])
+}
+
+model Menu {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  location  String
+  items     MenuItem[]
+}
+
+model MediaFile {
+  id          String   @id @default(cuid())
+  fileName    String
+  fileUrl     String
+  mimeType    String
+  sizeKb      Float
+  altText     String?
+  uploadedBy  String
+  createdAt   DateTime @default(now())
+}
+
+model EmailTemplate {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  subject   String
+  body      String
+  variables Json?
+  isSystem  Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  data      Json?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+// ═══════════════════════════════════════════
+// API KEYS
+// ═══════════════════════════════════════════
+
+model ApiKey {
+  id          String    @id @default(cuid())
+  userId      String
+  name        String
+  keyHash     String    @unique
+  keyPrefix   String
+  permissions Json?
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id])
+}
+
+// ═══════════════════════════════════════════
+// AUDIT LOGS & USAGE
+// ═══════════════════════════════════════════
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String
+  action      String
+  entity      String
+  entityId    String?
+  oldValues   Json?
+  newValues   Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model UsageLog {
+  id          String   @id @default(cuid())
+  userId      String
+  surveyId    String?
+  action      String
+  quantity    Int      @default(1)
+  month       String
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+}
