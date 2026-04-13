@@ -58,15 +58,16 @@ export default function RegisterPage() {
         setError("");
         setLoading(true);
         try {
-            // Send user_type instead of role — the backend DTO whitelists user_type, not role
-            const payload: Record<string, unknown> = { ...form };
+            // Send accountType — backend RegisterDto accepts USER or RESPONDENT
+            const payload: Record<string, unknown> = {
+                name: form.name,
+                email: form.email,
+                password: form.password,
+            };
             if (accountType === "respondent") {
-                payload.user_type = "RESPONDENT";
+                payload.accountType = "RESPONDENT";
             }
-            // Researchers are default type — no need to send user_type
-            delete payload.organization;
-            delete payload.phone;
-            // Only send relevant fields
+            // Only send optional fields when provided
             if (accountType === "researcher" && form.organization) {
                 payload.organization = form.organization;
             }

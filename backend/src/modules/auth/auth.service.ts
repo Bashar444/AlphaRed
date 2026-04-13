@@ -42,6 +42,7 @@ export class AuthService {
                 passwordHash,
                 organization: dto.organization,
                 phone: dto.phone,
+                role: dto.accountType === 'RESPONDENT' ? 'RESPONDENT' : 'USER',
                 status: 'ACTIVE',
             },
         });

@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength, IsOptional, IsEnum } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MinLength, IsOptional, IsEnum, IsIn } from 'class-validator';
 
 export class RegisterDto {
     @IsEmail()
@@ -19,6 +19,10 @@ export class RegisterDto {
     @IsOptional()
     @IsString()
     phone?: string;
+
+    @IsOptional()
+    @IsIn(['USER', 'RESPONDENT'])
+    accountType?: string;
 }
 
 export class LoginDto {

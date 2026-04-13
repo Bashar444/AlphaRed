@@ -97,27 +97,32 @@ export const exports_ = {
 
 // ── Subscriptions ───────────────────────────────
 export const subscriptions = {
-    plans: () => request("GET", "/subscriptions/plans"),
-    current: () => request("GET", "/subscriptions/current"),
-    checkout: (planKey: string) => request("POST", "/subscriptions/checkout", { plan_key: planKey }),
-    verify: (data: Record<string, unknown>) => request("POST", "/subscriptions/verify", data),
+    me: () => request("GET", "/subscriptions/me"),
+    subscribe: (planId: string, billingCycle?: string, discountCode?: string) =>
+        request("POST", "/subscriptions/subscribe", { planId, billingCycle, discountCode }),
     cancel: () => request("POST", "/subscriptions/cancel"),
+};
+
+// ── Plans (public + admin) ──────────────────────
+export const plans = {
+    list: (includeInactive = false) =>
+        request("GET", `/plans${includeInactive ? "?all=true" : ""}`),
+    get: (slug: string) => request("GET", `/plans/${slug}`),
+    create: (data: Record<string, unknown>) => request("POST", "/plans", data),
+    update: (id: string, data: Record<string, unknown>) => request("PUT", `/plans/${id}`, data),
+    toggle: (id: string) => request("PATCH", `/plans/${id}/toggle`),
 };
 
 // ── Admin Subscription Management ───────────────
 export const adminSubscriptions = {
-    listPlans: () => request("GET", "/admin/subscriptions/plans"),
-    createPlan: (data: Record<string, unknown>) => request("POST", "/admin/subscriptions/plans", data),
-    updatePlan: (id: string | number, data: Record<string, unknown>) => request("PUT", `/admin/subscriptions/plans/${id}`, data),
-    deletePlan: (id: string | number) => request("DELETE", `/admin/subscriptions/plans/${id}`),
-    listSubscriptions: (params?: Record<string, string>) => {
+    listPending: (params?: Record<string, string>) => {
         const qs = params ? "?" + new URLSearchParams(params).toString() : "";
-        return request("GET", `/admin/subscriptions${qs}`);
+        return request("GET", `/subscriptions/pending${qs}`);
     },
-    getSubscription: (id: string | number) => request("GET", `/admin/subscriptions/${id}`),
-    cancelSubscription: (id: string | number) => request("POST", `/admin/subscriptions/${id}/cancel`),
-    assignPlan: (userId: string | number, planId: string | number) =>
-        request("POST", "/admin/subscriptions/assign", { user_id: userId, plan_id: planId }),
+    approve: (subscriptionId: string) =>
+        request("POST", "/subscriptions/approve", { subscriptionId }),
+    reject: (subscriptionId: string, reason?: string) =>
+        request("POST", "/subscriptions/reject", { subscriptionId, reason }),
 };
 
 // ── Admin ───────────────────────────────────────
@@ -335,6 +340,7 @@ export const roles = crudModule("/roles");
 // Unified api object for convenient imports: import { api } from "@/lib/api"
 export const api = {
     auth,
+    plans,
     surveys,
     responses,
     analysis,

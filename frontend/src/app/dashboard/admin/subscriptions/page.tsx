@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
@@ -12,53 +12,70 @@ import {
     Loader2,
     CreditCard,
     Pencil,
-    Trash2,
+    ToggleLeft,
+    ToggleRight,
     Users,
     DollarSign,
     Package,
+    CheckCircle2,
+    XCircle,
+    Clock,
 } from "lucide-react";
 
+/* Types matching real NestJS backend */
 interface Plan {
     id: string;
-    key: string;
     name: string;
-    description: string;
-    price: number;
-    currency: string;
-    billing_cycle: string;
+    slug: string;
+    description?: string;
+    priceInr: number;
+    priceUsd: number;
+    billingCycle: string;
+    isActive: boolean;
+    isFeatured: boolean;
+    sortOrder: number;
+    trialDays: number;
+    maxSurveys: number;
+    maxResponses: number;
+    maxQuestions: number;
+    maxTeamMembers: number;
     features: string[];
-    limits: Record<string, number>;
-    status: string;
-    subscribers_count?: number;
+    supportLevel: string;
 }
 
-interface Subscription {
+interface PendingSub {
     id: string;
     userId: string;
-    user?: { name: string; email: string };
     planId: string;
-    plan?: { name: string };
+    billingCycle: string;
     status: string;
-    startDate: string;
-    endDate: string;
+    createdAt: string;
+    user?: { id: string; name: string; email: string; organization?: string };
+    plan?: { name: string; priceInr: number };
 }
 
 const defaultPlanForm = {
     name: "",
+    slug: "",
     description: "",
-    price: "",
-    currency: "INR",
-    billing_cycle: "per_request",
+    priceInr: "",
+    priceUsd: "",
+    billingCycle: "MONTHLY",
+    maxSurveys: "1",
+    maxResponses: "50",
+    maxQuestions: "10",
+    maxTeamMembers: "0",
     features: "",
-    max_surveys: "",
-    max_questions: "",
-    max_responses: "",
+    supportLevel: "community",
+    trialDays: "0",
+    sortOrder: "0",
+    isFeatured: false,
 };
 
 export default function AdminSubscriptionsPage() {
-    const [tab, setTab] = useState<"plans" | "subscribers">("plans");
+    const [tab, setTab] = useState<"plans" | "pending">("plans");
     const [plans, setPlans] = useState<Plan[]>([]);
-    const [subscriptionsList, setSubscriptionsList] = useState<Subscription[]>([]);
+    const [pending, setPending] = useState<PendingSub[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
@@ -68,23 +85,25 @@ export default function AdminSubscriptionsPage() {
     useEffect(() => { loadPlans(); }, []);
 
     async function loadPlans() {
+        setLoading(true);
         try {
-            const data = await api.adminSubscriptions.listPlans();
+            const data = await api.plans.list(true);
             setPlans(Array.isArray(data) ? data : []);
         } catch { setPlans([]); }
         finally { setLoading(false); }
     }
 
-    async function loadSubscribers() {
+    async function loadPending() {
         try {
-            const data = await api.adminSubscriptions.listSubscriptions();
-            setSubscriptionsList(Array.isArray(data) ? data : []);
-        } catch { setSubscriptionsList([]); }
+            const data = await api.adminSubscriptions.listPending();
+            const list = (data as Record<string, unknown>)?.subscriptions || data;
+            setPending(Array.isArray(list) ? list : []);
+        } catch { setPending([]); }
     }
 
-    function switchTab(t: "plans" | "subscribers") {
+    function switchTab(t: "plans" | "pending") {
         setTab(t);
-        if (t === "subscribers" && subscriptionsList.length === 0) loadSubscribers();
+        if (t === "pending" && pending.length === 0) loadPending();
     }
 
     function openCreate() {
@@ -97,65 +116,83 @@ export default function AdminSubscriptionsPage() {
         setEditingPlan(plan);
         setForm({
             name: plan.name,
+            slug: plan.slug,
             description: plan.description || "",
-            price: String(plan.price),
-            currency: plan.currency || "INR",
-            billing_cycle: plan.billing_cycle || "per_request",
-            features: (plan.features || []).join("\n"),
-            max_surveys: String(plan.limits?.max_surveys || ""),
-            max_questions: String(plan.limits?.max_questions || ""),
-            max_responses: String(plan.limits?.max_responses || ""),
+            priceInr: String(plan.priceInr),
+            priceUsd: String(plan.priceUsd),
+            billingCycle: plan.billingCycle || "MONTHLY",
+            maxSurveys: String(plan.maxSurveys),
+            maxResponses: String(plan.maxResponses),
+            maxQuestions: String(plan.maxQuestions),
+            maxTeamMembers: String(plan.maxTeamMembers),
+            features: (Array.isArray(plan.features) ? plan.features : []).join("\n"),
+            supportLevel: plan.supportLevel || "community",
+            trialDays: String(plan.trialDays || 0),
+            sortOrder: String(plan.sortOrder || 0),
+            isFeatured: plan.isFeatured,
         });
         setShowModal(true);
     }
 
     async function handleSave() {
-        if (!form.name || !form.price) return;
+        if (!form.name || !form.slug) return;
         setSaving(true);
         try {
             const payload = {
                 name: form.name,
-                description: form.description,
-                price: Number(form.price),
-                currency: form.currency,
-                billing_cycle: form.billing_cycle,
+                slug: form.slug,
+                description: form.description || undefined,
+                priceInr: Number(form.priceInr) || 0,
+                priceUsd: Number(form.priceUsd) || 0,
+                billingCycle: form.billingCycle,
+                maxSurveys: Number(form.maxSurveys) || 0,
+                maxResponses: Number(form.maxResponses) || 0,
+                maxQuestions: Number(form.maxQuestions) || 0,
+                maxTeamMembers: Number(form.maxTeamMembers) || 0,
                 features: form.features.split("\n").map((f) => f.trim()).filter(Boolean),
-                limits: {
-                    max_surveys: Number(form.max_surveys) || 0,
-                    max_questions: Number(form.max_questions) || 0,
-                    max_responses: Number(form.max_responses) || 0,
-                },
+                supportLevel: form.supportLevel,
+                trialDays: Number(form.trialDays) || 0,
+                sortOrder: Number(form.sortOrder) || 0,
+                isFeatured: form.isFeatured,
             };
             if (editingPlan) {
-                await api.adminSubscriptions.updatePlan(editingPlan.id, payload);
+                await api.plans.update(editingPlan.id, payload);
             } else {
-                await api.adminSubscriptions.createPlan(payload);
+                await api.plans.create(payload);
             }
             setShowModal(false);
             loadPlans();
-        } catch {
-            alert("Failed to save plan");
+        } catch (err) {
+            alert(err instanceof Error ? err.message : "Failed to save plan");
         } finally {
             setSaving(false);
         }
     }
 
-    async function handleDeletePlan(id: string) {
-        if (!confirm("Delete this plan? Existing subscribers will not be affected.")) return;
+    async function handleToggle(id: string) {
         try {
-            await api.adminSubscriptions.deletePlan(id);
-            setPlans((prev) => prev.filter((p) => p.id !== id));
-        } catch { alert("Failed to delete plan"); }
+            await api.plans.toggle(id);
+            setPlans((prev) => prev.map((p) => p.id === id ? { ...p, isActive: !p.isActive } : p));
+        } catch { alert("Failed to toggle plan"); }
     }
 
-    async function handleCancelSubscription(id: string) {
-        if (!confirm("Cancel this subscription?")) return;
+    async function handleApprove(subscriptionId: string) {
         try {
-            await api.adminSubscriptions.cancelSubscription(id);
-            setSubscriptionsList((prev) =>
-                prev.map((s) => (s.id === id ? { ...s, status: "cancelled" } : s))
-            );
-        } catch { alert("Failed to cancel subscription"); }
+            await api.adminSubscriptions.approve(subscriptionId);
+            setPending((prev) => prev.filter((s) => s.id !== subscriptionId));
+        } catch (err) {
+            alert(err instanceof Error ? err.message : "Failed to approve");
+        }
+    }
+
+    async function handleReject(subscriptionId: string) {
+        const reason = prompt("Rejection reason (optional):");
+        try {
+            await api.adminSubscriptions.reject(subscriptionId, reason || undefined);
+            setPending((prev) => prev.filter((s) => s.id !== subscriptionId));
+        } catch (err) {
+            alert(err instanceof Error ? err.message : "Failed to reject");
+        }
     }
 
     if (loading) {
@@ -171,7 +208,7 @@ export default function AdminSubscriptionsPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900">Subscription Management</h1>
-                    <p className="text-sm text-slate-500 mt-1">Create and manage pricing plans for researchers</p>
+                    <p className="text-sm text-slate-500 mt-1">Manage pricing plans and approve subscription requests</p>
                 </div>
                 {tab === "plans" && (
                     <Button onClick={openCreate} className="gap-1">
@@ -182,13 +219,16 @@ export default function AdminSubscriptionsPage() {
 
             {/* Tabs */}
             <div className="flex gap-1 border-b border-slate-200">
-                {(["plans", "subscribers"] as const).map((t) => (
+                {([
+                    { key: "plans" as const, label: "Plans" },
+                    { key: "pending" as const, label: `Pending Approvals${pending.length ? ` (${pending.length})` : ""}` },
+                ]).map((t) => (
                     <button
-                        key={t}
-                        onClick={() => switchTab(t)}
-                        className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${tab === t ? "border-violet-600 text-violet-700" : "border-transparent text-slate-500 hover:text-slate-700"}`}
+                        key={t.key}
+                        onClick={() => switchTab(t.key)}
+                        className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${tab === t.key ? "border-violet-600 text-violet-700" : "border-transparent text-slate-500 hover:text-slate-700"}`}
                     >
-                        {t === "plans" ? "Plans" : "Subscribers"}
+                        {t.label}
                     </button>
                 ))}
             </div>
@@ -196,7 +236,6 @@ export default function AdminSubscriptionsPage() {
             {/* Plans Tab */}
             {tab === "plans" && (
                 <div className="space-y-4">
-                    {/* Stats row */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <Card>
                             <CardContent className="pt-5 flex items-center gap-3">
@@ -215,9 +254,9 @@ export default function AdminSubscriptionsPage() {
                                     <Users className="w-5 h-5 text-emerald-600" />
                                 </div>
                                 <div>
-                                    <p className="text-sm text-slate-500">Active Subscribers</p>
+                                    <p className="text-sm text-slate-500">Active Plans</p>
                                     <p className="text-xl font-bold text-slate-900">
-                                        {plans.reduce((sum, p) => sum + (p.subscribers_count || 0), 0)}
+                                        {plans.filter((p) => p.isActive).length}
                                     </p>
                                 </div>
                             </CardContent>
@@ -228,14 +267,13 @@ export default function AdminSubscriptionsPage() {
                                     <DollarSign className="w-5 h-5 text-amber-600" />
                                 </div>
                                 <div>
-                                    <p className="text-sm text-slate-500">Pricing Model</p>
-                                    <p className="text-xl font-bold text-slate-900">Per Request</p>
+                                    <p className="text-sm text-slate-500">Pending Approvals</p>
+                                    <p className="text-xl font-bold text-slate-900">{pending.length}</p>
                                 </div>
                             </CardContent>
                         </Card>
                     </div>
 
-                    {/* Plans grid */}
                     {plans.length === 0 ? (
                         <Card>
                             <CardContent className="py-16 text-center">
@@ -247,32 +285,47 @@ export default function AdminSubscriptionsPage() {
                     ) : (
                         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {plans.map((plan) => (
-                                <Card key={plan.id} className="relative">
+                                <Card key={plan.id} className={`relative ${!plan.isActive ? "opacity-60" : ""}`}>
                                     <CardHeader className="pb-3">
                                         <div className="flex items-start justify-between">
                                             <div>
                                                 <CardTitle className="text-base">{plan.name}</CardTitle>
-                                                <p className="text-xs text-slate-500 mt-1">{plan.description}</p>
+                                                <p className="text-xs text-slate-500 mt-1">{plan.slug}</p>
                                             </div>
-                                            <Badge variant={plan.status === "active" ? "success" : "default"}>
-                                                {plan.status}
-                                            </Badge>
+                                            <div className="flex gap-1">
+                                                <Badge variant={plan.isActive ? "success" : "default"}>
+                                                    {plan.isActive ? "Active" : "Inactive"}
+                                                </Badge>
+                                                {plan.isFeatured && <Badge variant="info">Featured</Badge>}
+                                            </div>
                                         </div>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
                                         <div>
                                             <span className="text-3xl font-bold text-slate-900">
-                                                {plan.currency === "INR" ? "₹" : "$"}{plan.price}
+                                                {"\u20B9"}{plan.priceInr.toLocaleString()}
                                             </span>
                                             <span className="text-sm text-slate-500 ml-1">
-                                                /{plan.billing_cycle === "per_request" ? "request" : plan.billing_cycle}
+                                                /{plan.billingCycle === "ANNUAL" ? "year" : "month"}
                                             </span>
+                                            {plan.priceUsd > 0 && (
+                                                <span className="text-xs text-slate-400 ml-2">(${plan.priceUsd})</span>
+                                            )}
                                         </div>
-                                        {plan.features && plan.features.length > 0 && (
+                                        {plan.description && (
+                                            <p className="text-xs text-slate-500">{plan.description}</p>
+                                        )}
+                                        <div className="text-xs text-slate-500 space-y-0.5">
+                                            <p>{plan.maxSurveys} surveys &bull; {plan.maxResponses} responses &bull; {plan.maxQuestions} questions</p>
+                                            {plan.maxTeamMembers > 0 && <p>{plan.maxTeamMembers} team members</p>}
+                                            {plan.trialDays > 0 && <p>{plan.trialDays}-day trial</p>}
+                                            <p>Support: {plan.supportLevel}</p>
+                                        </div>
+                                        {Array.isArray(plan.features) && plan.features.length > 0 && (
                                             <ul className="space-y-1.5">
                                                 {plan.features.slice(0, 4).map((f, i) => (
                                                     <li key={i} className="text-xs text-slate-600 flex items-center gap-1.5">
-                                                        <span className="w-1 h-1 rounded-full bg-violet-500" />{f}
+                                                        <span className="w-1 h-1 rounded-full bg-violet-500" />{String(f)}
                                                     </li>
                                                 ))}
                                                 {plan.features.length > 4 && (
@@ -281,15 +334,12 @@ export default function AdminSubscriptionsPage() {
                                             </ul>
                                         )}
                                         <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
-                                            <span className="text-xs text-slate-500">
-                                                {plan.subscribers_count || 0} subscribers
-                                            </span>
                                             <div className="flex-1" />
-                                            <button onClick={() => openEdit(plan)} className="p-1.5 rounded hover:bg-slate-100 text-slate-400 hover:text-violet-600">
+                                            <button onClick={() => openEdit(plan)} className="p-1.5 rounded hover:bg-slate-100 text-slate-400 hover:text-violet-600" title="Edit">
                                                 <Pencil className="w-3.5 h-3.5" />
                                             </button>
-                                            <button onClick={() => handleDeletePlan(plan.id)} className="p-1.5 rounded hover:bg-red-50 text-slate-400 hover:text-red-500">
-                                                <Trash2 className="w-3.5 h-3.5" />
+                                            <button onClick={() => handleToggle(plan.id)} className="p-1.5 rounded hover:bg-slate-100 text-slate-400 hover:text-amber-600" title={plan.isActive ? "Deactivate" : "Activate"}>
+                                                {plan.isActive ? <ToggleRight className="w-4 h-4 text-emerald-500" /> : <ToggleLeft className="w-4 h-4" />}
                                             </button>
                                         </div>
                                     </CardContent>
@@ -300,15 +350,15 @@ export default function AdminSubscriptionsPage() {
                 </div>
             )}
 
-            {/* Subscribers Tab */}
-            {tab === "subscribers" && (
+            {/* Pending Approvals Tab */}
+            {tab === "pending" && (
                 <Card>
-                    <CardHeader><CardTitle>Active Subscriptions</CardTitle></CardHeader>
+                    <CardHeader><CardTitle>Pending Subscription Requests</CardTitle></CardHeader>
                     <CardContent>
-                        {subscriptionsList.length === 0 ? (
+                        {pending.length === 0 ? (
                             <div className="text-center py-12">
-                                <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                                <p className="text-sm text-slate-500">No subscriptions yet.</p>
+                                <Clock className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                                <p className="text-sm text-slate-500">No pending subscription requests.</p>
                             </div>
                         ) : (
                             <div className="overflow-x-auto">
@@ -317,33 +367,50 @@ export default function AdminSubscriptionsPage() {
                                         <tr className="border-b border-slate-200 text-slate-500">
                                             <th className="text-left px-4 py-3 font-medium">User</th>
                                             <th className="text-left px-4 py-3 font-medium">Plan</th>
-                                            <th className="text-left px-4 py-3 font-medium">Status</th>
-                                            <th className="text-left px-4 py-3 font-medium">Start</th>
-                                            <th className="text-left px-4 py-3 font-medium">End</th>
+                                            <th className="text-left px-4 py-3 font-medium">Billing</th>
+                                            <th className="text-left px-4 py-3 font-medium">Requested</th>
                                             <th className="text-right px-4 py-3 font-medium">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {subscriptionsList.map((sub) => (
+                                        {pending.map((sub) => (
                                             <tr key={sub.id} className="border-b border-slate-100 hover:bg-slate-50">
                                                 <td className="px-4 py-3">
-                                                    <p className="font-medium text-slate-900">{sub.user?.name || "—"}</p>
+                                                    <p className="font-medium text-slate-900">{sub.user?.name || "\u2014"}</p>
                                                     <p className="text-xs text-slate-400">{sub.user?.email}</p>
-                                                </td>
-                                                <td className="px-4 py-3 text-slate-700">{sub.plan?.name || sub.planId}</td>
-                                                <td className="px-4 py-3">
-                                                    <Badge variant={sub.status === "active" ? "success" : sub.status === "cancelled" ? "danger" : "warning"}>
-                                                        {sub.status}
-                                                    </Badge>
-                                                </td>
-                                                <td className="px-4 py-3 text-slate-500">{sub.startDate ? new Date(sub.startDate).toLocaleDateString() : "—"}</td>
-                                                <td className="px-4 py-3 text-slate-500">{sub.endDate ? new Date(sub.endDate).toLocaleDateString() : "—"}</td>
-                                                <td className="px-4 py-3 text-right">
-                                                    {sub.status === "active" && (
-                                                        <Button variant="ghost" size="sm" onClick={() => handleCancelSubscription(sub.id)}>
-                                                            Cancel
-                                                        </Button>
+                                                    {sub.user?.organization && (
+                                                        <p className="text-xs text-slate-400">{sub.user.organization}</p>
                                                     )}
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <p className="text-slate-700">{sub.plan?.name || sub.planId}</p>
+                                                    {sub.plan?.priceInr !== undefined && (
+                                                        <p className="text-xs text-slate-400">{"\u20B9"}{sub.plan.priceInr}/mo</p>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3 text-slate-500">{sub.billingCycle}</td>
+                                                <td className="px-4 py-3 text-slate-500">
+                                                    {new Date(sub.createdAt).toLocaleDateString()}
+                                                </td>
+                                                <td className="px-4 py-3 text-right">
+                                                    <div className="flex items-center justify-end gap-1">
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            className="text-emerald-600 hover:bg-emerald-50 gap-1"
+                                                            onClick={() => handleApprove(sub.id)}
+                                                        >
+                                                            <CheckCircle2 className="w-3.5 h-3.5" /> Approve
+                                                        </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            className="text-red-500 hover:bg-red-50 gap-1"
+                                                            onClick={() => handleReject(sub.id)}
+                                                        >
+                                                            <XCircle className="w-3.5 h-3.5" /> Reject
+                                                        </Button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}
@@ -371,30 +438,43 @@ export default function AdminSubscriptionsPage() {
                 }
             >
                 <div className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Plan Name *</label>
-                        <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Professional" />
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Plan Name *</label>
+                            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Professional" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Slug *</label>
+                            <Input
+                                value={form.slug}
+                                onChange={(e) => setForm({ ...form, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-") })}
+                                placeholder="e.g. professional"
+                                disabled={!!editingPlan}
+                            />
+                        </div>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
                         <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Plan description" />
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-3 gap-3">
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Price *</label>
-                            <Input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="0" />
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Price INR *</label>
+                            <Input type="number" value={form.priceInr} onChange={(e) => setForm({ ...form, priceInr: e.target.value })} placeholder="0" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Price USD</label>
+                            <Input type="number" value={form.priceUsd} onChange={(e) => setForm({ ...form, priceUsd: e.target.value })} placeholder="0" />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-1">Billing Cycle</label>
                             <select
-                                value={form.billing_cycle}
-                                onChange={(e) => setForm({ ...form, billing_cycle: e.target.value })}
+                                value={form.billingCycle}
+                                onChange={(e) => setForm({ ...form, billingCycle: e.target.value })}
                                 className="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
                             >
-                                <option value="per_request">Per Request</option>
-                                <option value="monthly">Monthly</option>
-                                <option value="yearly">Yearly</option>
-                                <option value="one_time">One Time</option>
+                                <option value="MONTHLY">Monthly</option>
+                                <option value="ANNUAL">Annual</option>
                             </select>
                         </div>
                     </div>
@@ -408,20 +488,56 @@ export default function AdminSubscriptionsPage() {
                             placeholder={"Unlimited surveys\nAI analysis\nPriority support"}
                         />
                     </div>
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 gap-3">
                         <div>
                             <label className="block text-xs font-medium text-slate-600 mb-1">Max Surveys</label>
-                            <Input type="number" value={form.max_surveys} onChange={(e) => setForm({ ...form, max_surveys: e.target.value })} placeholder="0 = unlimited" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-slate-600 mb-1">Max Questions</label>
-                            <Input type="number" value={form.max_questions} onChange={(e) => setForm({ ...form, max_questions: e.target.value })} placeholder="0 = unlimited" />
+                            <Input type="number" value={form.maxSurveys} onChange={(e) => setForm({ ...form, maxSurveys: e.target.value })} />
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-slate-600 mb-1">Max Responses</label>
-                            <Input type="number" value={form.max_responses} onChange={(e) => setForm({ ...form, max_responses: e.target.value })} placeholder="0 = unlimited" />
+                            <Input type="number" value={form.maxResponses} onChange={(e) => setForm({ ...form, maxResponses: e.target.value })} />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-medium text-slate-600 mb-1">Max Questions</label>
+                            <Input type="number" value={form.maxQuestions} onChange={(e) => setForm({ ...form, maxQuestions: e.target.value })} />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-medium text-slate-600 mb-1">Max Team Members</label>
+                            <Input type="number" value={form.maxTeamMembers} onChange={(e) => setForm({ ...form, maxTeamMembers: e.target.value })} />
                         </div>
                     </div>
+                    <div className="grid grid-cols-3 gap-3">
+                        <div>
+                            <label className="block text-xs font-medium text-slate-600 mb-1">Trial Days</label>
+                            <Input type="number" value={form.trialDays} onChange={(e) => setForm({ ...form, trialDays: e.target.value })} />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-medium text-slate-600 mb-1">Sort Order</label>
+                            <Input type="number" value={form.sortOrder} onChange={(e) => setForm({ ...form, sortOrder: e.target.value })} />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-medium text-slate-600 mb-1">Support Level</label>
+                            <select
+                                value={form.supportLevel}
+                                onChange={(e) => setForm({ ...form, supportLevel: e.target.value })}
+                                className="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm"
+                            >
+                                <option value="community">Community</option>
+                                <option value="email">Email</option>
+                                <option value="priority">Priority</option>
+                                <option value="dedicated">Dedicated</option>
+                            </select>
+                        </div>
+                    </div>
+                    <label className="flex items-center gap-2 text-sm text-slate-700">
+                        <input
+                            type="checkbox"
+                            checked={form.isFeatured}
+                            onChange={(e) => setForm({ ...form, isFeatured: e.target.checked })}
+                            className="rounded border-slate-300"
+                        />
+                        Mark as featured/popular plan
+                    </label>
                 </div>
             </Modal>
         </div>

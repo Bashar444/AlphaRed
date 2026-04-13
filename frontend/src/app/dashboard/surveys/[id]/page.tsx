@@ -122,6 +122,8 @@ export default function SurveyBuilderPage() {
         try {
             await api.surveys.launch(surveyId, {});
             await load();
+        } catch (err) {
+            alert(err instanceof Error ? err.message : "Failed to launch survey. Make sure it has at least one question and is in DRAFT status.");
         } finally {
             setLaunching(false);
         }

@@ -8,16 +8,30 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Loader2, CreditCard } from "lucide-react";
 
 interface Plan {
-    key: string;
+    id: string;
     name: string;
-    price: number;
+    slug: string;
+    description?: string;
+    priceInr: number;
+    priceUsd: number;
+    billingCycle: string;
+    maxSurveys: number;
+    maxResponses: number;
+    maxQuestions: number;
+    maxTeamMembers: number;
     features: string[];
+    supportLevel: string;
+    isActive: boolean;
+    isFeatured: boolean;
 }
 
 interface CurrentSub {
-    plan: string;
+    id: string;
+    planId: string;
     status: string;
-    expiresAt: string;
+    billingCycle: string;
+    currentPeriodEnd?: string;
+    plan?: Plan;
 }
 
 export default function SubscriptionPage() {
@@ -27,27 +41,22 @@ export default function SubscriptionPage() {
     const [purchasing, setPurchasing] = useState<string | null>(null);
 
     useEffect(() => {
-        Promise.all([api.subscriptions.plans(), api.subscriptions.current()])
-            .then(([p, c]) => {
-                setPlans(p || []);
-                setCurrent(c?.subscription || null);
+        Promise.all([api.plans.list(), api.subscriptions.me()])
+            .then(([p, sub]) => {
+                setPlans(Array.isArray(p) ? p : []);
+                setCurrent(sub || null);
             })
             .catch(() => { })
             .finally(() => setLoading(false));
     }, []);
 
-    async function handleCheckout(planKey: string) {
-        setPurchasing(planKey);
+    async function handleSubscribe(planId: string) {
+        setPurchasing(planId);
         try {
-            const data = await api.subscriptions.checkout(planKey);
-            // Redirect to Razorpay or handle checkout flow
-            if (data.orderId || data.order_id) {
-                alert(
-                    `Razorpay order created: ${data.orderId || data.order_id}. Integrate Razorpay checkout JS to complete.`
-                );
-            }
-        } catch {
-            // handle error
+            const sub = await api.subscriptions.subscribe(planId);
+            setCurrent(sub);
+        } catch (err) {
+            alert(err instanceof Error ? err.message : "Failed to subscribe");
         } finally {
             setPurchasing(null);
         }
@@ -58,7 +67,7 @@ export default function SubscriptionPage() {
             return;
         try {
             await api.subscriptions.cancel();
-            setCurrent((prev) => (prev ? { ...prev, status: "cancelled" } : null));
+            setCurrent((prev) => (prev ? { ...prev, status: "CANCELLED" } : null));
         } catch {
             // handle error
         }
@@ -71,6 +80,17 @@ export default function SubscriptionPage() {
             </div>
         );
     }
+
+    const statusLabel = (s: string) => {
+        const map: Record<string, string> = {
+            ACTIVE: "Active",
+            TRIALING: "Trial",
+            PENDING_APPROVAL: "Pending",
+            CANCELLED: "Cancelled",
+            PAST_DUE: "Past Due",
+        };
+        return map[s] || s;
+    };
 
     return (
         <div className="space-y-6">
@@ -94,24 +114,23 @@ export default function SubscriptionPage() {
                                     <p className="text-sm font-semibold text-slate-900">
                                         Current Plan:{" "}
                                         <span className="text-violet-700">
-                                            {current.plan?.charAt(0).toUpperCase() +
-                                                current.plan?.slice(1)}
+                                            {current.plan?.name || "Unknown"}
                                         </span>
                                     </p>
                                     <p className="text-xs text-slate-500">
-                                        {current.status === "active"
-                                            ? `Active until ${new Date(current.expiresAt).toLocaleDateString()}`
-                                            : `Status: ${current.status}`}
+                                        {current.status === "ACTIVE" && current.currentPeriodEnd
+                                            ? `Active until ${new Date(current.currentPeriodEnd).toLocaleDateString()}`
+                                            : `Status: ${statusLabel(current.status)}`}
                                     </p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
                                 <Badge
-                                    variant={current.status === "active" ? "success" : "warning"}
+                                    variant={current.status === "ACTIVE" ? "success" : "warning"}
                                 >
-                                    {current.status}
+                                    {statusLabel(current.status)}
                                 </Badge>
-                                {current.status === "active" && (
+                                {(current.status === "ACTIVE" || current.status === "TRIALING") && (
                                     <Button variant="ghost" size="sm" onClick={handleCancel}>
                                         Cancel
                                     </Button>
@@ -125,51 +144,55 @@ export default function SubscriptionPage() {
             {/* Plans */}
             <div className="grid md:grid-cols-3 gap-6">
                 {plans.map((plan) => {
-                    const isCurrent = current?.plan === plan.key;
+                    const isCurrent = current?.planId === plan.id;
                     return (
                         <Card
-                            key={plan.key}
-                            className={
-                                isCurrent
-                                    ? "border-violet-300 ring-1 ring-violet-200"
-                                    : ""
-                            }
+                            key={plan.id}
+                            className={isCurrent ? "border-violet-300 ring-1 ring-violet-200" : ""}
                         >
                             <CardHeader>
                                 <CardTitle className="flex items-center justify-between">
                                     {plan.name}
                                     {isCurrent && <Badge variant="info">Current</Badge>}
+                                    {plan.isFeatured && !isCurrent && <Badge variant="default">Popular</Badge>}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="mb-6">
+                                <div className="mb-2">
                                     <span className="text-3xl font-bold text-slate-900">
-                                        ₹{plan.price?.toLocaleString()}
+                                        ₹{plan.priceInr?.toLocaleString()}
                                     </span>
                                     <span className="text-sm text-slate-500">/month</span>
                                 </div>
+                                {plan.description && (
+                                    <p className="text-xs text-slate-500 mb-4">{plan.description}</p>
+                                )}
+                                <div className="text-xs text-slate-500 mb-4 space-y-1">
+                                    <p>{plan.maxSurveys} surveys &bull; {plan.maxResponses} responses &bull; {plan.maxQuestions} questions</p>
+                                    {plan.maxTeamMembers > 0 && <p>{plan.maxTeamMembers} team members</p>}
+                                </div>
                                 <ul className="space-y-2.5 mb-6">
-                                    {plan.features?.map((f) => (
+                                    {(Array.isArray(plan.features) ? plan.features : []).map((f) => (
                                         <li
-                                            key={f}
+                                            key={String(f)}
                                             className="flex items-center gap-2 text-sm text-slate-600"
                                         >
                                             <CheckCircle2 className="w-4 h-4 text-violet-500 flex-shrink-0" />
-                                            {f}
+                                            {String(f)}
                                         </li>
                                     ))}
                                 </ul>
                                 {!isCurrent && (
                                     <Button
                                         className="w-full"
-                                        variant={plan.key === "advanced" ? "primary" : "outline"}
-                                        onClick={() => handleCheckout(plan.key)}
-                                        disabled={purchasing === plan.key}
+                                        variant={plan.isFeatured ? "primary" : "outline"}
+                                        onClick={() => handleSubscribe(plan.id)}
+                                        disabled={purchasing === plan.id}
                                     >
-                                        {purchasing === plan.key ? (
+                                        {purchasing === plan.id && (
                                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                        ) : null}
-                                        {isCurrent ? "Current Plan" : "Upgrade"}
+                                        )}
+                                        {current ? "Switch Plan" : "Subscribe"}
                                     </Button>
                                 )}
                             </CardContent>
