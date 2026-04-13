@@ -9,6 +9,11 @@ import { PlansModule } from './modules/plans/plans.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { SurveysModule } from './modules/surveys/surveys.module';
 import { ResponsesModule } from './modules/responses/responses.module';
+import { LeadsModule } from './modules/leads/leads.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
+import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
+import { DatasetsModule } from './modules/datasets/datasets.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -45,6 +50,11 @@ import { ResponsesModule } from './modules/responses/responses.module';
     SubscriptionsModule,
     SurveysModule,
     ResponsesModule,
+    LeadsModule,
+    NotificationsModule,
+    AuditLogsModule,
+    DatasetsModule,
+    DashboardModule,
   ],
 })
 export class AppModule { }
