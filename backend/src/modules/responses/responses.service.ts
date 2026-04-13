@@ -10,7 +10,24 @@ import { SubmitResponseDto } from './dto';
 export class ResponsesService {
     constructor(private prisma: PrismaService) { }
 
-    async submit(dto: SubmitResponseDto, ipHash?: string, userAgent?: string) {
+    async submit(dto: SubmitResponseDto, user: { id: string; email: string }, ipHash?: string, userAgent?: string) {
+        // Resolve or auto-create the Respondent record from the authenticated user
+        let respondent = await this.prisma.respondent.findFirst({
+            where: { email: user.email },
+        });
+        if (!respondent) {
+            respondent = await this.prisma.respondent.create({
+                data: {
+                    email: user.email,
+                    name: user.email.split('@')[0],
+                    status: 'ACTIVE',
+                    kycStatus: 'PENDING',
+                    demographics: {},
+                },
+            });
+        }
+        const respondentId = respondent.id;
+
         // Validate survey exists and is active
         const survey = await this.prisma.survey.findUnique({
             where: { id: dto.surveyId },
@@ -25,7 +42,7 @@ export class ResponsesService {
         const existing = await this.prisma.response.findFirst({
             where: {
                 surveyId: dto.surveyId,
-                respondentId: dto.respondentId,
+                respondentId,
                 status: 'COMPLETED',
             },
         });
@@ -38,7 +55,7 @@ export class ResponsesService {
             const resp = await tx.response.create({
                 data: {
                     surveyId: dto.surveyId,
-                    respondentId: dto.respondentId,
+                    respondentId,
                     status: 'COMPLETED',
                     durationSecs: dto.durationSecs,
                     ipHash,
@@ -65,7 +82,7 @@ export class ResponsesService {
 
             // Update respondent stats
             await tx.respondent.update({
-                where: { id: dto.respondentId },
+                where: { id: respondentId },
                 data: {
                     totalResponses: { increment: 1 },
                     acceptedCount: { increment: 1 },

@@ -5,8 +5,9 @@ export class SubmitResponseDto {
     @IsString()
     surveyId!: string;
 
+    @IsOptional()
     @IsString()
-    respondentId!: string;
+    respondentId?: string;
 
     @IsArray()
     @ValidateNested({ each: true })

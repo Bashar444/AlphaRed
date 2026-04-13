@@ -23,12 +23,18 @@ export class ResponsesController {
     constructor(private readonly responsesService: ResponsesService) { }
 
     @Post('submit')
-    @ApiOperation({ summary: 'Submit a survey response (public)' })
-    async submit(@Body() dto: SubmitResponseDto, @Req() req: Request) {
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @ApiOperation({ summary: 'Submit a survey response (authenticated respondent)' })
+    async submit(
+        @Body() dto: SubmitResponseDto,
+        @CurrentUser() user: { id: string; email: string },
+        @Req() req: Request,
+    ) {
         const ip = req.ip || req.socket.remoteAddress || '';
         const ipHash = crypto.createHash('sha256').update(ip).digest('hex').slice(0, 16);
         const userAgent = req.headers['user-agent'] || '';
-        return this.responsesService.submit(dto, ipHash, userAgent);
+        return this.responsesService.submit(dto, user, ipHash, userAgent);
     }
 
     @Get('survey/:surveyId')
