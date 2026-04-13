@@ -8,6 +8,8 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { contracts } from "@/lib/api";
 import { Plus, Loader2, ScrollText } from "lucide-react";
+import { Modal } from "@/components/ui/modal";
+import { Input } from "@/components/ui/input";
 
 interface ContractRow {
     id: number;
@@ -33,10 +35,26 @@ const statusVar = (s: string) => {
 export default function ContractsPage() {
     const [data, setData] = useState<ContractRow[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showCreate, setShowCreate] = useState(false);
+    const [creating, setCreating] = useState(false);
+    const [form, setForm] = useState({ subject: "", client_name: "", contract_value: "", start_date: "", end_date: "" });
 
-    useEffect(() => {
+    const loadData = () => {
+        setLoading(true);
         contracts.list().then((d) => setData(d ?? [])).catch(() => { }).finally(() => setLoading(false));
-    }, []);
+    };
+
+    useEffect(() => { loadData(); }, []);
+
+    const handleCreate = async () => {
+        setCreating(true);
+        try {
+            await contracts.create(form);
+            setShowCreate(false);
+            setForm({ subject: "", client_name: "", contract_value: "", start_date: "", end_date: "" });
+            loadData();
+        } catch (e) { console.error(e); } finally { setCreating(false); }
+    };
 
     const columns: Column<ContractRow>[] = [
         { key: "id", label: "#", sortable: true },
@@ -53,11 +71,11 @@ export default function ContractsPage() {
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-white">Contracts</h1>
-                <Button size="sm" className="gap-1"><Plus className="w-4 h-4" /> New Contract</Button>
+                <h1 className="text-2xl font-bold text-slate-900">Contracts</h1>
+                <Button size="sm" className="gap-1" onClick={() => setShowCreate(true)}><Plus className="w-4 h-4" /> New Contract</Button>
             </div>
-            <Card className="bg-slate-900 border-slate-800">
-                <CardHeader><CardTitle className="text-white">All Contracts</CardTitle></CardHeader>
+            <Card>
+                <CardHeader><CardTitle>All Contracts</CardTitle></CardHeader>
                 <CardContent>
                     {data.length === 0 ? (
                         <EmptyState title="No contracts" icon={<ScrollText className="w-6 h-6 text-slate-500" />} />
@@ -66,6 +84,24 @@ export default function ContractsPage() {
                     )}
                 </CardContent>
             </Card>
+
+            <Modal open={showCreate} onClose={() => setShowCreate(false)} title="New Contract" footer={
+                <><Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
+                    <Button onClick={handleCreate} disabled={creating}>{creating ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}Create</Button></>
+            }>
+                <div className="space-y-4">
+                    <div><label className="block text-sm font-medium text-slate-700 mb-1">Subject *</label>
+                        <Input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} placeholder="Contract subject" /></div>
+                    <div><label className="block text-sm font-medium text-slate-700 mb-1">Client Name *</label>
+                        <Input value={form.client_name} onChange={(e) => setForm({ ...form, client_name: e.target.value })} placeholder="Client name" /></div>
+                    <div><label className="block text-sm font-medium text-slate-700 mb-1">Contract Value *</label>
+                        <Input type="number" value={form.contract_value} onChange={(e) => setForm({ ...form, contract_value: e.target.value })} placeholder="0.00" /></div>
+                    <div><label className="block text-sm font-medium text-slate-700 mb-1">Start Date</label>
+                        <Input type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} /></div>
+                    <div><label className="block text-sm font-medium text-slate-700 mb-1">End Date</label>
+                        <Input type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} /></div>
+                </div>
+            </Modal>
         </div>
     );
 }

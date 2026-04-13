@@ -9,6 +9,8 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { projects } from "@/lib/api";
 import { Plus, FolderOpen, Loader2 } from "lucide-react";
+import { Modal } from "@/components/ui/modal";
+import { Input } from "@/components/ui/input";
 
 interface Project {
     id: number;
@@ -36,10 +38,26 @@ export default function ProjectsPage() {
     const router = useRouter();
     const [data, setData] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showCreate, setShowCreate] = useState(false);
+    const [creating, setCreating] = useState(false);
+    const [form, setForm] = useState({ title: "", client_name: "", deadline: "", description: "" });
 
-    useEffect(() => {
+    const loadData = () => {
+        setLoading(true);
         projects.list().then((d) => setData(d ?? [])).catch(() => { }).finally(() => setLoading(false));
-    }, []);
+    };
+
+    useEffect(() => { loadData(); }, []);
+
+    const handleCreate = async () => {
+        setCreating(true);
+        try {
+            await projects.create(form);
+            setShowCreate(false);
+            setForm({ title: "", client_name: "", deadline: "", description: "" });
+            loadData();
+        } catch (e) { console.error(e); } finally { setCreating(false); }
+    };
 
     const columns: Column<Project>[] = [
         { key: "id", label: "ID", sortable: true },
@@ -57,10 +75,10 @@ export default function ProjectsPage() {
                 const pct = r.total_points ? Math.round((r.completed_points / r.total_points) * 100) : 0;
                 return (
                     <div className="flex items-center gap-2">
-                        <div className="w-20 h-2 bg-slate-700 rounded-full overflow-hidden">
+                        <div className="w-20 h-2 bg-slate-200 rounded-full overflow-hidden">
                             <div className="h-full bg-violet-500 rounded-full" style={{ width: `${pct}%` }} />
                         </div>
-                        <span className="text-xs text-slate-400">{pct}%</span>
+                        <span className="text-xs text-slate-500">{pct}%</span>
                     </div>
                 );
             },
@@ -72,12 +90,12 @@ export default function ProjectsPage() {
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-white">Projects</h1>
-                <Button size="sm" className="gap-1"><Plus className="w-4 h-4" /> New Project</Button>
+                <h1 className="text-2xl font-bold text-slate-900">Projects</h1>
+                <Button size="sm" className="gap-1" onClick={() => setShowCreate(true)}><Plus className="w-4 h-4" /> New Project</Button>
             </div>
 
-            <Card className="bg-slate-900 border-slate-800">
-                <CardHeader><CardTitle className="text-white">All Projects</CardTitle></CardHeader>
+            <Card>
+                <CardHeader><CardTitle>All Projects</CardTitle></CardHeader>
                 <CardContent>
                     {data.length === 0 ? (
                         <EmptyState title="No projects" message="Create your first project to get started." icon={<FolderOpen className="w-6 h-6 text-slate-500" />} />
@@ -86,6 +104,22 @@ export default function ProjectsPage() {
                     )}
                 </CardContent>
             </Card>
+
+            <Modal open={showCreate} onClose={() => setShowCreate(false)} title="New Project" footer={
+                <><Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
+                    <Button onClick={handleCreate} disabled={creating}>{creating ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}Create</Button></>
+            }>
+                <div className="space-y-4">
+                    <div><label className="block text-sm font-medium text-slate-700 mb-1">Title *</label>
+                        <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Project title" /></div>
+                    <div><label className="block text-sm font-medium text-slate-700 mb-1">Client Name *</label>
+                        <Input value={form.client_name} onChange={(e) => setForm({ ...form, client_name: e.target.value })} placeholder="Client name" /></div>
+                    <div><label className="block text-sm font-medium text-slate-700 mb-1">Deadline</label>
+                        <Input type="date" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} /></div>
+                    <div><label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                        <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Description" /></div>
+                </div>
+            </Modal>
         </div>
     );
 }

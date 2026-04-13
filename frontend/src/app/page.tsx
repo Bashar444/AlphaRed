@@ -196,7 +196,7 @@ export default function LandingPage() {
               <div className="w-6 h-6 rounded bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center font-bold text-white text-[10px]">P</div>
               <span className="text-sm font-semibold text-slate-900">PrimoData Analytics</span>
             </div>
-            <p className="text-xs text-slate-500">{footer?.copyright || "© 2025 PrimoData Analytics. Built for Indian researchers."}</p>
+            <p className="text-xs text-slate-500">{footer?.copyright || "© 2025 PrimoData Analytics. All rights reserved."}</p>
           </div>
         </div>
       </footer>

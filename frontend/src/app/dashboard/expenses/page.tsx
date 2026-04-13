@@ -32,7 +32,7 @@ export default function ExpensesPage() {
         { key: "id", label: "#", sortable: true },
         { key: "title", label: "Title", sortable: true },
         { key: "category_title", label: "Category", sortable: true },
-        { key: "amount", label: "Amount", sortable: true, render: (r) => <span className="text-red-400">${Number(r.amount || 0).toFixed(2)}</span> },
+        { key: "amount", label: "Amount", sortable: true, render: (r) => <span className="text-red-600 font-medium">${Number(r.amount || 0).toFixed(2)}</span> },
         { key: "expense_date", label: "Date", sortable: true },
         { key: "project_title", label: "Project" },
     ];
@@ -42,22 +42,22 @@ export default function ExpensesPage() {
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-white">Expenses</h1>
+                <h1 className="text-2xl font-bold text-slate-900">Expenses</h1>
                 <Button size="sm" className="gap-1"><Plus className="w-4 h-4" /> New Expense</Button>
             </div>
 
-            <Card className="bg-slate-900 border-slate-800">
+            <Card>
                 <CardContent className="pt-6 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center"><DollarSign className="w-5 h-5 text-red-400" /></div>
+                    <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center"><DollarSign className="w-5 h-5 text-red-500" /></div>
                     <div>
-                        <p className="text-sm text-slate-400">Total Expenses</p>
-                        <p className="text-xl font-bold text-white">${total.toFixed(2)}</p>
+                        <p className="text-sm text-slate-500">Total Expenses</p>
+                        <p className="text-xl font-bold text-slate-900">${total.toFixed(2)}</p>
                     </div>
                 </CardContent>
             </Card>
 
-            <Card className="bg-slate-900 border-slate-800">
-                <CardHeader><CardTitle className="text-white">All Expenses</CardTitle></CardHeader>
+            <Card>
+                <CardHeader><CardTitle>All Expenses</CardTitle></CardHeader>
                 <CardContent>
                     {data.length === 0 ? (
                         <EmptyState title="No expenses" message="Record your first expense." />

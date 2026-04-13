@@ -1,15 +1,30 @@
 "use client";
 
 import { useAuth } from "@/lib/auth-context";
-import { Bell, Search } from "lucide-react";
+import { Bell, Search, Shield, BarChart3, ClipboardList } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function Topbar({ title }: { title?: string }) {
     const { user } = useAuth();
 
+    const isAdmin = user?.role === "SUPERADMIN" || user?.role === "MANAGER" || user?.is_admin;
+    const isRespondent = user?.role === "RESPONDENT";
+
+    const roleLabel = isAdmin ? "Admin" : isRespondent ? "Respondent" : "Researcher";
+    const RoleIcon = isAdmin ? Shield : isRespondent ? ClipboardList : BarChart3;
+
     return (
-        <header className="sticky top-0 z-30 flex items-center justify-between h-16 px-6 bg-white border-b border-slate-200">
+        <header className="sticky top-0 z-30 flex items-center justify-between h-14 px-6 bg-white border-b border-slate-200">
             <div className="flex items-center gap-4">
-                {title && <h1 className="text-xl font-semibold text-slate-900">{title}</h1>}
+                {title && <h1 className="text-lg font-semibold text-slate-900">{title}</h1>}
+                {/* Role indicator */}
+                <div className={cn(
+                    "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium",
+                    isAdmin ? "bg-amber-50 text-amber-700" : isRespondent ? "bg-emerald-50 text-emerald-700" : "bg-violet-50 text-violet-700"
+                )}>
+                    <RoleIcon className="w-3 h-3" />
+                    {roleLabel}
+                </div>
             </div>
 
             <div className="flex items-center gap-3">
@@ -19,7 +34,7 @@ export function Topbar({ title }: { title?: string }) {
                     <input
                         type="text"
                         placeholder="Search..."
-                        className="pl-9 pr-4 py-2 w-64 text-sm bg-slate-50 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                        className="pl-9 pr-4 py-1.5 w-56 text-sm bg-slate-50 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
                     />
                 </div>
 
@@ -30,8 +45,11 @@ export function Topbar({ title }: { title?: string }) {
                 </button>
 
                 {/* Avatar */}
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-xs font-semibold">
-                    {user?.name?.[0]}
+                <div className={cn(
+                    "w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold",
+                    isAdmin ? "bg-gradient-to-br from-amber-500 to-orange-600" : isRespondent ? "bg-gradient-to-br from-emerald-500 to-teal-600" : "bg-gradient-to-br from-violet-500 to-indigo-600"
+                )}>
+                    {user?.name?.[0]?.toUpperCase()}
                 </div>
             </div>
         </header>

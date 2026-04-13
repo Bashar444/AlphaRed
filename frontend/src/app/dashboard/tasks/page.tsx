@@ -53,7 +53,7 @@ export default function TasksPage() {
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-white">Tasks</h1>
+                <h1 className="text-2xl font-bold text-slate-900">Tasks</h1>
                 <div className="flex items-center gap-2">
                     <Button variant="ghost" size="sm" onClick={() => setView("board")} className={view === "board" ? "text-violet-400" : ""}>
                         <LayoutGrid className="w-4 h-4" />
@@ -72,18 +72,18 @@ export default function TasksPage() {
                     {statuses.map((s) => (
                         <div key={s.id} className="space-y-3">
                             <div className="flex items-center justify-between px-1">
-                                <h3 className="text-sm font-medium text-slate-400">{s.title}</h3>
-                                <span className="text-xs text-slate-500">{tasksByStatus(s.id).length}</span>
+                                <h3 className="text-sm font-medium text-slate-600">{s.title}</h3>
+                                <span className="text-xs text-slate-400">{tasksByStatus(s.id).length}</span>
                             </div>
                             <div className="space-y-2 min-h-[100px]">
                                 {tasksByStatus(s.id).map((t) => (
-                                    <Card key={t.id} className="bg-slate-900 border-slate-800 hover:border-slate-700 cursor-pointer transition-colors">
+                                    <Card key={t.id} className="hover:shadow-md cursor-pointer transition-shadow">
                                         <CardContent className="p-3 space-y-2">
-                                            <p className="text-sm font-medium text-white">{t.title}</p>
+                                            <p className="text-sm font-medium text-slate-900">{t.title}</p>
                                             <p className="text-xs text-slate-500">{t.project_title || "No project"}</p>
                                             <div className="flex items-center justify-between">
-                                                <span className="text-xs text-slate-500">{t.deadline || "No deadline"}</span>
-                                                {t.points > 0 && <span className="text-xs text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded">{t.points}pts</span>}
+                                                <span className="text-xs text-slate-400">{t.deadline || "No deadline"}</span>
+                                                {t.points > 0 && <span className="text-xs text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">{t.points}pts</span>}
                                             </div>
                                         </CardContent>
                                     </Card>
@@ -93,12 +93,12 @@ export default function TasksPage() {
                     ))}
                 </div>
             ) : (
-                <Card className="bg-slate-900 border-slate-800">
-                    <CardHeader><CardTitle className="text-white">All Tasks</CardTitle></CardHeader>
+                <Card>
+                    <CardHeader><CardTitle>All Tasks</CardTitle></CardHeader>
                     <CardContent>
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
-                                <thead><tr className="border-b border-slate-800 text-slate-400">
+                                <thead><tr className="border-b border-slate-200 text-slate-500">
                                     <th className="px-4 py-3 text-left">Title</th>
                                     <th className="px-4 py-3 text-left">Project</th>
                                     <th className="px-4 py-3 text-left">Status</th>
@@ -106,12 +106,12 @@ export default function TasksPage() {
                                     <th className="px-4 py-3 text-left">Points</th>
                                 </tr></thead>
                                 <tbody>{data.map((t) => (
-                                    <tr key={t.id} className="border-b border-slate-800/50 hover:bg-slate-800/50">
-                                        <td className="px-4 py-3 text-slate-300">{t.title}</td>
-                                        <td className="px-4 py-3 text-slate-400">{t.project_title || "—"}</td>
+                                    <tr key={t.id} className="border-b border-slate-100 hover:bg-slate-50">
+                                        <td className="px-4 py-3 text-slate-900">{t.title}</td>
+                                        <td className="px-4 py-3 text-slate-500">{t.project_title || "—"}</td>
                                         <td className="px-4 py-3"><StatusBadge label={t.status_title || "—"} variant={statusVariant(t.status_id)} /></td>
-                                        <td className="px-4 py-3 text-slate-400">{t.deadline || "—"}</td>
-                                        <td className="px-4 py-3 text-slate-400">{t.points}</td>
+                                        <td className="px-4 py-3 text-slate-500">{t.deadline || "—"}</td>
+                                        <td className="px-4 py-3 text-slate-500">{t.points}</td>
                                     </tr>
                                 ))}</tbody>
                             </table>

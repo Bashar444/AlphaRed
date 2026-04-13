@@ -8,6 +8,8 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { estimates } from "@/lib/api";
 import { Plus, Loader2, FileSpreadsheet } from "lucide-react";
+import { Modal } from "@/components/ui/modal";
+import { Input } from "@/components/ui/input";
 
 interface EstimateRow {
     id: number;
@@ -31,10 +33,26 @@ const statusVar = (s: string) => {
 export default function EstimatesPage() {
     const [data, setData] = useState<EstimateRow[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showCreate, setShowCreate] = useState(false);
+    const [creating, setCreating] = useState(false);
+    const [form, setForm] = useState({ client_name: "", estimate_total: "", valid_until: "", note: "" });
 
-    useEffect(() => {
+    const loadData = () => {
+        setLoading(true);
         estimates.list().then((d) => setData(d ?? [])).catch(() => { }).finally(() => setLoading(false));
-    }, []);
+    };
+
+    useEffect(() => { loadData(); }, []);
+
+    const handleCreate = async () => {
+        setCreating(true);
+        try {
+            await estimates.create(form);
+            setShowCreate(false);
+            setForm({ client_name: "", estimate_total: "", valid_until: "", note: "" });
+            loadData();
+        } catch (e) { console.error(e); } finally { setCreating(false); }
+    };
 
     const columns: Column<EstimateRow>[] = [
         { key: "id", label: "#", sortable: true },
@@ -49,11 +67,11 @@ export default function EstimatesPage() {
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-white">Estimates</h1>
-                <Button size="sm" className="gap-1"><Plus className="w-4 h-4" /> New Estimate</Button>
+                <h1 className="text-2xl font-bold text-slate-900">Estimates</h1>
+                <Button size="sm" className="gap-1" onClick={() => setShowCreate(true)}><Plus className="w-4 h-4" /> New Estimate</Button>
             </div>
-            <Card className="bg-slate-900 border-slate-800">
-                <CardHeader><CardTitle className="text-white">All Estimates</CardTitle></CardHeader>
+            <Card>
+                <CardHeader><CardTitle>All Estimates</CardTitle></CardHeader>
                 <CardContent>
                     {data.length === 0 ? (
                         <EmptyState title="No estimates" icon={<FileSpreadsheet className="w-6 h-6 text-slate-500" />} />
@@ -62,6 +80,22 @@ export default function EstimatesPage() {
                     )}
                 </CardContent>
             </Card>
+
+            <Modal open={showCreate} onClose={() => setShowCreate(false)} title="New Estimate" footer={
+                <><Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
+                    <Button onClick={handleCreate} disabled={creating}>{creating ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}Create</Button></>
+            }>
+                <div className="space-y-4">
+                    <div><label className="block text-sm font-medium text-slate-700 mb-1">Client Name *</label>
+                        <Input value={form.client_name} onChange={(e) => setForm({ ...form, client_name: e.target.value })} placeholder="Client name" /></div>
+                    <div><label className="block text-sm font-medium text-slate-700 mb-1">Estimate Total *</label>
+                        <Input type="number" value={form.estimate_total} onChange={(e) => setForm({ ...form, estimate_total: e.target.value })} placeholder="0.00" /></div>
+                    <div><label className="block text-sm font-medium text-slate-700 mb-1">Valid Until</label>
+                        <Input type="date" value={form.valid_until} onChange={(e) => setForm({ ...form, valid_until: e.target.value })} /></div>
+                    <div><label className="block text-sm font-medium text-slate-700 mb-1">Note</label>
+                        <Input value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="Optional note" /></div>
+                </div>
+            </Modal>
         </div>
     );
 }

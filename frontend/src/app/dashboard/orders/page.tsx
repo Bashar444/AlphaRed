@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { DataTable, Column } from "@/components/ui/data-table";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Modal } from "@/components/ui/modal";
+import { Input } from "@/components/ui/input";
 import { orders } from "@/lib/api";
 import { Plus, Loader2, ShoppingCart } from "lucide-react";
 
@@ -22,10 +24,27 @@ interface OrderRow {
 export default function OrdersPage() {
     const [data, setData] = useState<OrderRow[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showCreate, setShowCreate] = useState(false);
+    const [creating, setCreating] = useState(false);
+    const [form, setForm] = useState({ client_name: "", order_total: "", note: "" });
 
-    useEffect(() => {
+    function loadData() {
         orders.list().then((d) => setData(d ?? [])).catch(() => { }).finally(() => setLoading(false));
-    }, []);
+    }
+
+    useEffect(() => { loadData(); }, []);
+
+    async function handleCreate() {
+        if (!form.client_name) return;
+        setCreating(true);
+        try {
+            await orders.create({ client_name: form.client_name, order_total: Number(form.order_total) || 0, note: form.note });
+            setShowCreate(false);
+            setForm({ client_name: "", order_total: "", note: "" });
+            loadData();
+        } catch { alert("Failed to create order"); }
+        finally { setCreating(false); }
+    }
 
     const columns: Column<OrderRow>[] = [
         { key: "id", label: "#", sortable: true },
@@ -40,11 +59,11 @@ export default function OrdersPage() {
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-white">Orders</h1>
-                <Button size="sm" className="gap-1"><Plus className="w-4 h-4" /> New Order</Button>
+                <h1 className="text-2xl font-bold text-slate-900">Orders</h1>
+                <Button size="sm" className="gap-1" onClick={() => setShowCreate(true)}><Plus className="w-4 h-4" /> New Order</Button>
             </div>
-            <Card className="bg-slate-900 border-slate-800">
-                <CardHeader><CardTitle className="text-white">All Orders</CardTitle></CardHeader>
+            <Card>
+                <CardHeader><CardTitle>All Orders</CardTitle></CardHeader>
                 <CardContent>
                     {data.length === 0 ? (
                         <EmptyState title="No orders" icon={<ShoppingCart className="w-6 h-6 text-slate-500" />} />
@@ -53,6 +72,20 @@ export default function OrdersPage() {
                     )}
                 </CardContent>
             </Card>
+
+            <Modal open={showCreate} onClose={() => setShowCreate(false)} title="New Order" footer={
+                <><Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
+                    <Button onClick={handleCreate} disabled={creating}>{creating ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}Create</Button></>
+            }>
+                <div className="space-y-4">
+                    <div><label className="block text-sm font-medium text-slate-700 mb-1">Client Name *</label>
+                        <Input value={form.client_name} onChange={(e) => setForm({ ...form, client_name: e.target.value })} placeholder="Client name" /></div>
+                    <div><label className="block text-sm font-medium text-slate-700 mb-1">Order Total</label>
+                        <Input type="number" value={form.order_total} onChange={(e) => setForm({ ...form, order_total: e.target.value })} placeholder="0.00" /></div>
+                    <div><label className="block text-sm font-medium text-slate-700 mb-1">Note</label>
+                        <Input value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="Optional note" /></div>
+                </div>
+            </Modal>
         </div>
     );
 }

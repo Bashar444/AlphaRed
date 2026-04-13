@@ -7,6 +7,8 @@ import { DataTable, Column } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { announcements } from "@/lib/api";
 import { Plus, Loader2, Megaphone } from "lucide-react";
+import { Modal } from "@/components/ui/modal";
+import { Input } from "@/components/ui/input";
 
 interface AnnouncementRow {
     id: number;
@@ -21,10 +23,26 @@ interface AnnouncementRow {
 export default function AnnouncementsPage() {
     const [data, setData] = useState<AnnouncementRow[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showCreate, setShowCreate] = useState(false);
+    const [creating, setCreating] = useState(false);
+    const [form, setForm] = useState({ title: "", description: "" });
 
-    useEffect(() => {
+    const loadData = () => {
+        setLoading(true);
         announcements.list().then((d) => setData(d ?? [])).catch(() => { }).finally(() => setLoading(false));
-    }, []);
+    };
+
+    useEffect(() => { loadData(); }, []);
+
+    const handleCreate = async () => {
+        setCreating(true);
+        try {
+            await announcements.create(form);
+            setShowCreate(false);
+            setForm({ title: "", description: "" });
+            loadData();
+        } catch (e) { console.error(e); } finally { setCreating(false); }
+    };
 
     const columns: Column<AnnouncementRow>[] = [
         { key: "title", label: "Title", sortable: true },
@@ -38,11 +56,11 @@ export default function AnnouncementsPage() {
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-white">Announcements</h1>
-                <Button size="sm" className="gap-1"><Plus className="w-4 h-4" /> New Announcement</Button>
+                <h1 className="text-2xl font-bold text-slate-900">Announcements</h1>
+                <Button size="sm" className="gap-1" onClick={() => setShowCreate(true)}><Plus className="w-4 h-4" /> New Announcement</Button>
             </div>
-            <Card className="bg-slate-900 border-slate-800">
-                <CardHeader><CardTitle className="text-white">All Announcements</CardTitle></CardHeader>
+            <Card>
+                <CardHeader><CardTitle>All Announcements</CardTitle></CardHeader>
                 <CardContent>
                     {data.length === 0 ? (
                         <EmptyState title="No announcements" icon={<Megaphone className="w-6 h-6 text-slate-500" />} />
@@ -51,6 +69,18 @@ export default function AnnouncementsPage() {
                     )}
                 </CardContent>
             </Card>
+
+            <Modal open={showCreate} onClose={() => setShowCreate(false)} title="New Announcement" footer={
+                <><Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
+                    <Button onClick={handleCreate} disabled={creating}>{creating ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}Create</Button></>
+            }>
+                <div className="space-y-4">
+                    <div><label className="block text-sm font-medium text-slate-700 mb-1">Title *</label>
+                        <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Announcement title" /></div>
+                    <div><label className="block text-sm font-medium text-slate-700 mb-1">Description *</label>
+                        <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Description" /></div>
+                </div>
+            </Modal>
         </div>
     );
 }

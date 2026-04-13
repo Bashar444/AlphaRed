@@ -29,16 +29,16 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
             onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
         >
-            <div className="relative w-full max-w-lg mx-4 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl">
-                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
-                    <h2 className="text-lg font-semibold text-white">{title}</h2>
+            <div className="relative w-full max-w-lg mx-4 bg-white border border-slate-200 rounded-xl shadow-2xl">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                    <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
                     <Button variant="ghost" size="sm" onClick={onClose}>
                         <X className="w-4 h-4" />
                     </Button>
                 </div>
                 <div className="px-6 py-4 max-h-[70vh] overflow-y-auto">{children}</div>
                 {footer && (
-                    <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-800">
+                    <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-100">
                         {footer}
                     </div>
                 )}

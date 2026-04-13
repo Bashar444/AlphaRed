@@ -27,7 +27,6 @@ import {
     Megaphone,
     MessageSquare,
     ScrollText,
-    Shield,
     ShoppingCart,
     StickyNote,
     Target,
@@ -36,11 +35,16 @@ import {
     User,
     Users,
     Wallet,
+    Globe,
+    Activity,
+    TrendingUp,
 } from "lucide-react";
 
-const mainNav = [
+/* ── Navigation definitions per role ─────────────────────── */
+
+const researcherNav = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/dashboard/surveys", label: "Surveys", icon: ClipboardList },
+    { href: "/dashboard/surveys", label: "My Surveys", icon: ClipboardList },
     { href: "/dashboard/analysis", label: "Analysis", icon: BarChart3 },
     { href: "/dashboard/exports", label: "Exports", icon: Download },
     { href: "/dashboard/api-keys", label: "API Keys", icon: Key },
@@ -85,36 +89,137 @@ const toolsNav = [
     { href: "/dashboard/todo", label: "To-Do", icon: CheckSquare },
 ];
 
-const adminNav = [
-    { href: "/dashboard/admin", label: "Admin Home", icon: Shield },
-    { href: "/dashboard/admin/users", label: "Users", icon: Users },
-    { href: "/dashboard/admin/respondents", label: "Respondents", icon: Users },
-    { href: "/dashboard/admin/datasets", label: "Datasets", icon: Database },
-    { href: "/dashboard/admin/revenue", label: "Revenue", icon: BarChart3 },
-    { href: "/dashboard/admin/cms", label: "CMS", icon: FileText },
+const adminPlatformNav = [
+    { href: "/dashboard/admin", label: "Overview", icon: Activity },
+    { href: "/dashboard/admin/users", label: "Users & Clients", icon: Users },
+    { href: "/dashboard/admin/respondents", label: "Respondents", icon: User },
+    { href: "/dashboard/admin/revenue", label: "Revenue", icon: TrendingUp },
 ];
 
-function NavSection({ label, items, pathname }: { label: string; items: typeof mainNav; pathname: string }) {
+const adminSurveyOpsNav = [
+    { href: "/dashboard/surveys", label: "All Surveys", icon: ClipboardList },
+    { href: "/dashboard/admin/datasets", label: "Datasets", icon: Database },
+    { href: "/dashboard/analysis", label: "Analysis", icon: BarChart3 },
+    { href: "/dashboard/exports", label: "Exports", icon: Download },
+];
+
+const adminSettingsNav = [
+    { href: "/dashboard/admin/cms", label: "CMS Pages", icon: Globe },
+    { href: "/dashboard/subscription", label: "Plans", icon: CreditCard },
+    { href: "/dashboard/api-keys", label: "API Keys", icon: Key },
+];
+
+/* ── Theme definitions ──────────────────────────────────── */
+
+interface SidebarTheme {
+    bg: string;
+    border: string;
+    sectionLabel: string;
+    itemDefault: string;
+    itemHover: string;
+    itemActive: string;
+    itemActiveBg: string;
+    logo: string;
+    logoBg: string;
+    userBorder: string;
+    userBg: string;
+    userText: string;
+    userSubtext: string;
+    logoutHover: string;
+    roleBadge: string;
+    roleBadgeBg: string;
+}
+
+const themes: Record<string, SidebarTheme> = {
+    admin: {
+        bg: "bg-slate-950",
+        border: "border-slate-800",
+        sectionLabel: "text-slate-500",
+        itemDefault: "text-slate-400",
+        itemHover: "hover:bg-slate-800 hover:text-white",
+        itemActive: "text-amber-300",
+        itemActiveBg: "bg-amber-500/10",
+        logo: "text-white",
+        logoBg: "bg-gradient-to-br from-amber-500 to-orange-600",
+        userBorder: "border-slate-800",
+        userBg: "bg-slate-800",
+        userText: "text-white",
+        userSubtext: "text-slate-500",
+        logoutHover: "hover:text-red-400",
+        roleBadge: "text-amber-400",
+        roleBadgeBg: "bg-amber-500/10",
+    },
+    researcher: {
+        bg: "bg-white",
+        border: "border-slate-200",
+        sectionLabel: "text-slate-400",
+        itemDefault: "text-slate-600",
+        itemHover: "hover:bg-violet-50 hover:text-violet-700",
+        itemActive: "text-violet-700",
+        itemActiveBg: "bg-violet-50",
+        logo: "text-slate-900",
+        logoBg: "bg-gradient-to-br from-violet-500 to-indigo-600",
+        userBorder: "border-slate-200",
+        userBg: "bg-violet-50",
+        userText: "text-slate-900",
+        userSubtext: "text-slate-500",
+        logoutHover: "hover:text-red-500",
+        roleBadge: "text-violet-600",
+        roleBadgeBg: "bg-violet-50",
+    },
+    respondent: {
+        bg: "bg-emerald-950",
+        border: "border-emerald-900",
+        sectionLabel: "text-emerald-600",
+        itemDefault: "text-emerald-300/70",
+        itemHover: "hover:bg-emerald-900 hover:text-white",
+        itemActive: "text-white",
+        itemActiveBg: "bg-emerald-700/30",
+        logo: "text-white",
+        logoBg: "bg-gradient-to-br from-emerald-500 to-teal-600",
+        userBorder: "border-emerald-900",
+        userBg: "bg-emerald-900",
+        userText: "text-white",
+        userSubtext: "text-emerald-500",
+        logoutHover: "hover:text-red-400",
+        roleBadge: "text-emerald-400",
+        roleBadgeBg: "bg-emerald-500/10",
+    },
+};
+
+/* ── Reusable nav section renderer ──────────────────────── */
+
+function NavSection({
+    label,
+    items,
+    pathname,
+    theme,
+}: {
+    label: string;
+    items: typeof researcherNav;
+    pathname: string;
+    theme: SidebarTheme;
+}) {
     return (
         <>
-            <div className="pt-4" />
-            <p className="px-3 text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">
+            <div className="pt-5" />
+            <p className={cn("px-3 text-[10px] font-semibold uppercase tracking-widest mb-2", theme.sectionLabel)}>
                 {label}
             </p>
             {items.map((item) => {
-                const active = pathname === item.href || (item.href !== "/dashboard" && pathname?.startsWith(item.href + "/"));
+                const active = pathname === item.href || (item.href !== "/dashboard" && item.href !== "/dashboard/respondent" && pathname?.startsWith(item.href + "/"));
                 return (
                     <Link
                         key={item.href}
                         href={item.href}
                         className={cn(
-                            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150",
                             active
-                                ? "bg-violet-600/20 text-violet-400"
-                                : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                                ? cn(theme.itemActiveBg, theme.itemActive)
+                                : cn(theme.itemDefault, theme.itemHover)
                         )}
                     >
-                        <item.icon className="w-4 h-4" />
+                        <item.icon className="w-4 h-4 flex-shrink-0" />
                         {item.label}
                     </Link>
                 );
@@ -123,97 +228,80 @@ function NavSection({ label, items, pathname }: { label: string; items: typeof m
     );
 }
 
+/* ── Main Sidebar ───────────────────────────────────────── */
+
 export function Sidebar() {
     const pathname = usePathname();
     const { user, logout } = useAuth();
 
-    const isStaff = user?.role === 'SUPERADMIN' || user?.role === 'MANAGER' || user?.role === 'AGENT' || user?.is_admin;
-    const isRespondent = user?.role === 'RESPONDENT';
+    const isAdmin = user?.role === "SUPERADMIN" || user?.role === "MANAGER" || user?.is_admin;
+    const isRespondent = user?.role === "RESPONDENT";
+    const isStaff = isAdmin || user?.role === "AGENT";
+
+    // Determine theme
+    const themeKey = isAdmin ? "admin" : isRespondent ? "respondent" : "researcher";
+    const theme = themes[themeKey];
+
+    const roleLabel = isAdmin ? "Admin" : isRespondent ? "Respondent" : "Researcher";
 
     return (
-        <aside className="flex flex-col w-64 min-h-screen bg-slate-950 text-white border-r border-slate-800">
+        <aside className={cn("fixed inset-y-0 left-0 z-40 flex flex-col w-64 min-h-screen border-r", theme.bg, theme.border)}>
             {/* Logo */}
-            <div className="flex items-center gap-2 px-6 py-5 border-b border-slate-800">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center font-bold text-sm">
+            <div className={cn("flex items-center gap-3 px-5 py-4 border-b", theme.border)}>
+                <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center font-bold text-white text-sm shadow-lg", theme.logoBg)}>
                     P
                 </div>
-                <span className="text-lg font-semibold tracking-tight">PrimoData</span>
+                <div className="flex-1 min-w-0">
+                    <span className={cn("text-base font-bold tracking-tight", theme.logo)}>PrimoData</span>
+                    <span className={cn("block text-[10px] font-medium uppercase tracking-wider", theme.roleBadge)}>
+                        {roleLabel} Portal
+                    </span>
+                </div>
             </div>
 
-            <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-                {isRespondent ? (
-                    /* ── Respondent sidebar ── */
+            {/* Navigation */}
+            <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
+                {isAdmin ? (
+                    /* ── Admin Sidebar ── */
                     <>
-                        <p className="px-3 text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">
-                            Respondent Panel
-                        </p>
-                        {respondentNav.map((item) => {
-                            const active = pathname === item.href || (item.href !== "/dashboard/respondent" && pathname?.startsWith(item.href));
-                            return (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    className={cn(
-                                        "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                                        active
-                                            ? "bg-violet-600/20 text-violet-400"
-                                            : "text-slate-400 hover:bg-slate-800 hover:text-white"
-                                    )}
-                                >
-                                    <item.icon className="w-4 h-4" />
-                                    {item.label}
-                                </Link>
-                            );
-                        })}
+                        <NavSection label="Platform" items={adminPlatformNav} pathname={pathname} theme={theme} />
+                        <NavSection label="Survey Operations" items={adminSurveyOpsNav} pathname={pathname} theme={theme} />
+                        <NavSection label="Business" items={businessNav} pathname={pathname} theme={theme} />
+                        <NavSection label="Team" items={teamNav} pathname={pathname} theme={theme} />
+                        <NavSection label="Tools" items={toolsNav} pathname={pathname} theme={theme} />
+                        <NavSection label="Settings" items={adminSettingsNav} pathname={pathname} theme={theme} />
+                    </>
+                ) : isRespondent ? (
+                    /* ── Respondent Sidebar ── */
+                    <>
+                        <NavSection label="My Panel" items={respondentNav} pathname={pathname} theme={theme} />
                     </>
                 ) : (
-                    /* ── Researcher / Admin sidebar ── */
+                    /* ── Researcher Sidebar ── */
                     <>
-                        <p className="px-3 text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">
-                            Platform
-                        </p>
-                        {mainNav.map((item) => {
-                            const active = pathname === item.href || (item.href !== "/dashboard" && pathname?.startsWith(item.href + "/"));
-                            return (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    className={cn(
-                                        "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                                        active
-                                            ? "bg-violet-600/20 text-violet-400"
-                                            : "text-slate-400 hover:bg-slate-800 hover:text-white"
-                                    )}
-                                >
-                                    <item.icon className="w-4 h-4" />
-                                    {item.label}
-                                </Link>
-                            );
-                        })}
-
-                        {isStaff && <NavSection label="Business" items={businessNav} pathname={pathname} />}
-                        {isStaff && <NavSection label="Team" items={teamNav} pathname={pathname} />}
-                        <NavSection label="Tools" items={toolsNav} pathname={pathname} />
-                        {user?.is_admin && <NavSection label="Administration" items={adminNav} pathname={pathname} />}
+                        <NavSection label="Research" items={researcherNav} pathname={pathname} theme={theme} />
+                        {isStaff && <NavSection label="Business" items={businessNav} pathname={pathname} theme={theme} />}
+                        {isStaff && <NavSection label="Team" items={teamNav} pathname={pathname} theme={theme} />}
+                        <NavSection label="Tools" items={toolsNav} pathname={pathname} theme={theme} />
                     </>
                 )}
             </nav>
 
             {/* User footer */}
-            <div className="border-t border-slate-800 px-4 py-3">
+            <div className={cn("border-t px-4 py-3", theme.border)}>
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-medium">
-                        {user?.name?.[0]}
+                    <div className={cn("w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold", theme.userBg, theme.userText)}>
+                        {user?.name?.[0]?.toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">
+                        <p className={cn("text-sm font-medium truncate", theme.userText)}>
                             {user?.name}
                         </p>
-                        <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+                        <p className={cn("text-xs truncate", theme.userSubtext)}>{user?.email}</p>
                     </div>
                     <button
                         onClick={logout}
-                        className="text-slate-500 hover:text-red-400 transition-colors"
+                        className={cn("text-slate-500 transition-colors", theme.logoutHover)}
                         title="Logout"
                     >
                         <LogOut className="w-4 h-4" />

@@ -55,14 +55,14 @@ export default function AttendancePage() {
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-white">Attendance</h1>
+                <h1 className="text-2xl font-bold text-slate-900">Attendance</h1>
                 <div className="flex gap-2">
                     <Button size="sm" variant="primary" onClick={() => handleClock("in")} disabled={clocking}><Clock className="w-4 h-4 mr-1" /> Clock In</Button>
                     <Button size="sm" variant="ghost" onClick={() => handleClock("out")} disabled={clocking}>Clock Out</Button>
                 </div>
             </div>
-            <Card className="bg-slate-900 border-slate-800">
-                <CardHeader><CardTitle className="text-white">Attendance Log</CardTitle></CardHeader>
+            <Card>
+                <CardHeader><CardTitle>Attendance Log</CardTitle></CardHeader>
                 <CardContent>
                     {data.length === 0 ? (
                         <EmptyState title="No attendance records" message="Clock in to start." />

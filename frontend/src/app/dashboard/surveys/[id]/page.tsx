@@ -15,6 +15,11 @@ import {
     Rocket,
     Target,
     Loader2,
+    Pause,
+    CheckCircle,
+    Archive,
+    Eye,
+    Copy,
 } from "lucide-react";
 
 interface QuestionOption {
@@ -122,6 +127,36 @@ export default function SurveyBuilderPage() {
         }
     }
 
+    async function handlePause() {
+        if (!confirm("Pause this survey? It will stop collecting responses.")) return;
+        try {
+            await api.surveys.pause(surveyId);
+            await load();
+        } catch { /* ignore */ }
+    }
+
+    async function handleComplete() {
+        if (!confirm("Mark this survey as complete? This cannot be undone.")) return;
+        try {
+            await api.surveys.complete(surveyId);
+            await load();
+        } catch { /* ignore */ }
+    }
+
+    async function handleArchive() {
+        if (!confirm("Archive this survey?")) return;
+        try {
+            await api.surveys.archive(surveyId);
+            await load();
+        } catch { /* ignore */ }
+    }
+
+    function copyRespondentLink() {
+        const link = `${window.location.origin}/survey/${surveyId}/respond`;
+        navigator.clipboard.writeText(link);
+        alert("Respondent link copied to clipboard!");
+    }
+
     function addQuestion() {
         setQuestions((prev) => [
             ...prev,
@@ -218,10 +253,35 @@ export default function SurveyBuilderPage() {
                     >
                         <Target className="w-4 h-4 mr-2" /> Targeting
                     </Button>
+                    {survey?.status === "ACTIVE" && (
+                        <Button variant="outline" size="sm" onClick={copyRespondentLink}>
+                            <Copy className="w-4 h-4 mr-1" /> Share Link
+                        </Button>
+                    )}
+                    {survey?.status === "ACTIVE" && (
+                        <Button variant="outline" size="sm" onClick={() => router.push(`/dashboard/surveys/${surveyId}/responses`)}>
+                            <Eye className="w-4 h-4 mr-1" /> Responses
+                        </Button>
+                    )}
                     {survey?.status === "DRAFT" && (
                         <Button onClick={handleLaunch} disabled={launching}>
                             {launching ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Rocket className="w-4 h-4 mr-2" />}
                             Launch
+                        </Button>
+                    )}
+                    {survey?.status === "ACTIVE" && (
+                        <Button variant="outline" onClick={handlePause}>
+                            <Pause className="w-4 h-4 mr-1" /> Pause
+                        </Button>
+                    )}
+                    {(survey?.status === "ACTIVE" || survey?.status === "PAUSED") && (
+                        <Button onClick={handleComplete}>
+                            <CheckCircle className="w-4 h-4 mr-1" /> Complete
+                        </Button>
+                    )}
+                    {survey?.status === "COMPLETED" && (
+                        <Button variant="outline" onClick={handleArchive}>
+                            <Archive className="w-4 h-4 mr-1" /> Archive
                         </Button>
                     )}
                 </div>
