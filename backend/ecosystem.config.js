@@ -2,7 +2,7 @@ module.exports = {
     apps: [
         {
             name: 'primodata-api',
-            script: 'dist/main.js',
+            script: 'dist/src/main.js',
             instances: 1,
             exec_mode: 'fork',
             env: {
