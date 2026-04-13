@@ -17,6 +17,9 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { AnalysisModule } from './modules/analysis/analysis.module';
 import { ExportsModule } from './modules/exports/exports.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { RespondentsModule } from './modules/respondents/respondents.module';
+import { InvitationsModule } from './modules/invitations/invitations.module';
+import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -61,6 +64,9 @@ import { PaymentsModule } from './modules/payments/payments.module';
     AnalysisModule,
     ExportsModule,
     PaymentsModule,
+    RespondentsModule,
+    InvitationsModule,
+    AdminModule,
   ],
 })
 export class AppModule { }

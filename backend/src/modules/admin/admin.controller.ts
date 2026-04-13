@@ -1,0 +1,217 @@
+import {
+    Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, UseGuards,
+} from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
+import { AdminService } from './admin.service';
+import {
+    UpsertSettingDto, UpdateModuleDto,
+    CreatePageDto, UpdatePageDto,
+    CreateEmailTemplateDto, UpdateEmailTemplateDto,
+    CreateMenuDto, CreateMenuItemDto,
+} from './dto';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+
+@ApiTags('Admin')
+@Controller('api/v1/admin')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('SUPERADMIN')
+@ApiBearerAuth()
+export class AdminController {
+    constructor(private readonly service: AdminService) { }
+
+    // ── Settings ──
+
+    @Get('settings')
+    @ApiOperation({ summary: 'List all settings' })
+    @ApiQuery({ name: 'group', required: false })
+    async getSettings(@Query('group') group?: string) {
+        return this.service.getSettings(group);
+    }
+
+    @Get('settings/:key')
+    @ApiOperation({ summary: 'Get a setting by key' })
+    async getSetting(@Param('key') key: string) {
+        return this.service.getSetting(key);
+    }
+
+    @Post('settings')
+    @ApiOperation({ summary: 'Upsert a setting' })
+    async upsertSetting(@Body() dto: UpsertSettingDto) {
+        return this.service.upsertSetting(dto);
+    }
+
+    @Delete('settings/:key')
+    @ApiOperation({ summary: 'Delete a setting' })
+    async deleteSetting(@Param('key') key: string) {
+        return this.service.deleteSetting(key);
+    }
+
+    // ── Module Toggles ──
+
+    @Get('modules')
+    @ApiOperation({ summary: 'List all modules' })
+    async listModules() {
+        return this.service.listModules();
+    }
+
+    @Patch('modules/:id')
+    @ApiOperation({ summary: 'Update module (enable/disable, reorder)' })
+    async updateModule(@Param('id') id: string, @Body() dto: UpdateModuleDto) {
+        return this.service.updateModule(id, dto);
+    }
+
+    @Post('modules/seed')
+    @ApiOperation({ summary: 'Seed default modules' })
+    async seedModules() {
+        return this.service.seedDefaultModules();
+    }
+
+    // ── CMS Pages ──
+
+    @Post('pages')
+    @ApiOperation({ summary: 'Create a CMS page' })
+    async createPage(@Body() dto: CreatePageDto) {
+        return this.service.createPage(dto);
+    }
+
+    @Get('pages')
+    @ApiOperation({ summary: 'List CMS pages' })
+    @ApiQuery({ name: 'published', required: false })
+    async listPages(@Query('published') published?: string) {
+        return this.service.listPages(published === 'true' ? true : published === 'false' ? false : undefined);
+    }
+
+    @Get('pages/:slug')
+    @ApiOperation({ summary: 'Get page by slug' })
+    async getPage(@Param('slug') slug: string) {
+        return this.service.getPage(slug);
+    }
+
+    @Put('pages/:id')
+    @ApiOperation({ summary: 'Update a CMS page' })
+    async updatePage(@Param('id') id: string, @Body() dto: UpdatePageDto) {
+        return this.service.updatePage(id, dto);
+    }
+
+    @Delete('pages/:id')
+    @ApiOperation({ summary: 'Delete a CMS page' })
+    async deletePage(@Param('id') id: string) {
+        return this.service.deletePage(id);
+    }
+
+    // ── Email Templates ──
+
+    @Get('email-templates')
+    @ApiOperation({ summary: 'List email templates' })
+    async listEmailTemplates() {
+        return this.service.listEmailTemplates();
+    }
+
+    @Get('email-templates/:name')
+    @ApiOperation({ summary: 'Get email template by name' })
+    async getEmailTemplate(@Param('name') name: string) {
+        return this.service.getEmailTemplate(name);
+    }
+
+    @Post('email-templates')
+    @ApiOperation({ summary: 'Create email template' })
+    async createEmailTemplate(@Body() dto: CreateEmailTemplateDto) {
+        return this.service.createEmailTemplate(dto);
+    }
+
+    @Put('email-templates/:id')
+    @ApiOperation({ summary: 'Update email template' })
+    async updateEmailTemplate(@Param('id') id: string, @Body() dto: UpdateEmailTemplateDto) {
+        return this.service.updateEmailTemplate(id, dto);
+    }
+
+    @Delete('email-templates/:id')
+    @ApiOperation({ summary: 'Delete email template' })
+    async deleteEmailTemplate(@Param('id') id: string) {
+        return this.service.deleteEmailTemplate(id);
+    }
+
+    // ── Menus ──
+
+    @Get('menus')
+    @ApiOperation({ summary: 'List all menus with items' })
+    async listMenus() {
+        return this.service.listMenus();
+    }
+
+    @Post('menus')
+    @ApiOperation({ summary: 'Create a menu' })
+    async createMenu(@Body() dto: CreateMenuDto) {
+        return this.service.createMenu(dto);
+    }
+
+    @Post('menus/items')
+    @ApiOperation({ summary: 'Add a menu item' })
+    async addMenuItem(@Body() dto: CreateMenuItemDto) {
+        return this.service.addMenuItem(dto);
+    }
+
+    @Delete('menus/items/:id')
+    @ApiOperation({ summary: 'Remove a menu item' })
+    async removeMenuItem(@Param('id') id: string) {
+        return this.service.removeMenuItem(id);
+    }
+
+    // ── Media ──
+
+    @Get('media')
+    @ApiOperation({ summary: 'List media files' })
+    @ApiQuery({ name: 'page', required: false })
+    @ApiQuery({ name: 'limit', required: false })
+    async listMedia(
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+    ) {
+        return this.service.listMedia(
+            page ? parseInt(page, 10) : 1,
+            limit ? parseInt(limit, 10) : 20,
+        );
+    }
+
+    @Post('media')
+    @ApiOperation({ summary: 'Register a media file (after upload to S3/storage)' })
+    async createMedia(
+        @Body() body: { fileName: string; fileUrl: string; mimeType: string; sizeKb: number; altText?: string },
+        @CurrentUser('sub') userId: string,
+    ) {
+        return this.service.createMediaRecord({ ...body, uploadedBy: userId });
+    }
+
+    @Delete('media/:id')
+    @ApiOperation({ summary: 'Delete a media file record' })
+    async deleteMedia(@Param('id') id: string) {
+        return this.service.deleteMedia(id);
+    }
+}
+
+// ── Public CMS endpoints (no auth) ──
+
+@ApiTags('CMS')
+@Controller('api/v1/cms')
+export class CmsController {
+    constructor(private readonly service: AdminService) { }
+
+    @Get('pages/:slug')
+    @ApiOperation({ summary: 'Get published page by slug (public)' })
+    async getPage(@Param('slug') slug: string) {
+        const page = await this.service.getPage(slug);
+        if (!page.published) {
+            throw new Error('Page not found');
+        }
+        return page;
+    }
+
+    @Get('menus')
+    @ApiOperation({ summary: 'Get all menus (public)' })
+    async getMenus() {
+        return this.service.listMenus();
+    }
+}
