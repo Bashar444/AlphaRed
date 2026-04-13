@@ -18,29 +18,29 @@ import {
 } from "lucide-react";
 
 interface AdminDashboard {
-    total_revenue: number;
-    active_subscriptions: number;
-    total_respondents: number;
-    total_surveys: number;
-    total_responses: number;
+    totalRevenue: number;
+    activeSubscriptions: number;
+    totalRespondents: number;
+    totalSurveys: number;
+    totalResponses: number;
 }
 
 interface Respondent {
-    id: number;
-    first_name: string;
-    last_name: string;
+    id: string;
+    name: string;
     email: string;
     status: string;
-    age: number;
-    gender: string;
-    location_state: string;
+    qualityScore: number;
+    totalResponses: number;
+    country: string;
+    state: string;
 }
 
 interface Dataset {
-    id: number;
+    id: string;
     title: string;
     status: string;
-    view_count: number;
+    viewCount: number;
     category: string;
 }
 
@@ -93,26 +93,26 @@ export default function AdminPage() {
         if (t === "datasets" && datasets.length === 0) loadDatasets();
     }
 
-    async function suspendRespondent(id: number) {
+    async function suspendRespondent(id: string) {
         if (!confirm("Suspend this respondent?")) return;
         try {
-            await api.admin.suspendRespondent(id);
+            await api.admin.suspendRespondent(id as unknown as number);
             setRespondents((prev) =>
-                prev.map((r) => (r.id === id ? { ...r, status: "suspended" } : r))
+                prev.map((r) => (r.id === id ? { ...r, status: "SUSPENDED" } : r))
             );
         } catch {
             // ignore
         }
     }
 
-    async function toggleDataset(id: number, action: "publish" | "unpublish") {
+    async function toggleDataset(id: string, action: "publish" | "unpublish") {
         try {
-            if (action === "publish") await api.admin.publishDataset(id);
-            else await api.admin.unpublishDataset(id);
+            if (action === "publish") await api.admin.publishDataset(id as unknown as number);
+            else await api.admin.unpublishDataset(id as unknown as number);
             setDatasets((prev) =>
                 prev.map((d) =>
                     d.id === id
-                        ? { ...d, status: action === "publish" ? "published" : "draft" }
+                        ? { ...d, status: action === "publish" ? "PUBLISHED" : "DRAFT" }
                         : d
                 )
             );
@@ -159,8 +159,8 @@ export default function AdminPage() {
                         key={t}
                         onClick={() => switchTab(t)}
                         className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${tab === t
-                                ? "border-violet-600 text-violet-700"
-                                : "border-transparent text-slate-500 hover:text-slate-700"
+                            ? "border-violet-600 text-violet-700"
+                            : "border-transparent text-slate-500 hover:text-slate-700"
                             }`}
                     >
                         {t.charAt(0).toUpperCase() + t.slice(1)}
@@ -173,27 +173,27 @@ export default function AdminPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                     <StatCard
                         title="Revenue"
-                        value={`₹${(dashboard.total_revenue || 0).toLocaleString()}`}
+                        value={`₹${(dashboard.totalRevenue || 0).toLocaleString()}`}
                         icon={<DollarSign className="w-5 h-5" />}
                     />
                     <StatCard
                         title="Subscriptions"
-                        value={dashboard.active_subscriptions || 0}
+                        value={dashboard.activeSubscriptions || 0}
                         icon={<FileText className="w-5 h-5" />}
                     />
                     <StatCard
                         title="Respondents"
-                        value={dashboard.total_respondents || 0}
+                        value={dashboard.totalRespondents || 0}
                         icon={<Users className="w-5 h-5" />}
                     />
                     <StatCard
                         title="Surveys"
-                        value={dashboard.total_surveys || 0}
+                        value={dashboard.totalSurveys || 0}
                         icon={<BarChart3 className="w-5 h-5" />}
                     />
                     <StatCard
                         title="Responses"
-                        value={dashboard.total_responses || 0}
+                        value={dashboard.totalResponses || 0}
                         icon={<FileText className="w-5 h-5" />}
                     />
                 </div>
@@ -218,13 +218,13 @@ export default function AdminPage() {
                                                 Email
                                             </th>
                                             <th className="text-left py-3 px-2 font-medium text-slate-500">
-                                                Age
+                                                Responses
                                             </th>
                                             <th className="text-left py-3 px-2 font-medium text-slate-500">
-                                                Gender
+                                                Quality
                                             </th>
                                             <th className="text-left py-3 px-2 font-medium text-slate-500">
-                                                State
+                                                Location
                                             </th>
                                             <th className="text-left py-3 px-2 font-medium text-slate-500">
                                                 Status
@@ -238,25 +238,25 @@ export default function AdminPage() {
                                         {respondents.map((r) => (
                                             <tr key={r.id} className="hover:bg-slate-50">
                                                 <td className="py-3 px-2 font-medium text-slate-900">
-                                                    {r.first_name} {r.last_name}
+                                                    {r.name || r.email}
                                                 </td>
                                                 <td className="py-3 px-2 text-slate-600">{r.email}</td>
-                                                <td className="py-3 px-2 text-slate-600">{r.age}</td>
-                                                <td className="py-3 px-2 text-slate-600">{r.gender}</td>
+                                                <td className="py-3 px-2 text-slate-600">{r.totalResponses}</td>
+                                                <td className="py-3 px-2 text-slate-600">{r.qualityScore?.toFixed(1)}</td>
                                                 <td className="py-3 px-2 text-slate-600">
-                                                    {r.location_state}
+                                                    {r.state || r.country}
                                                 </td>
                                                 <td className="py-3 px-2">
                                                     <Badge
                                                         variant={
-                                                            r.status === "active" ? "success" : "danger"
+                                                            r.status === "ACTIVE" ? "success" : "danger"
                                                         }
                                                     >
-                                                        {r.status}
+                                                        {r.status.toLowerCase()}
                                                     </Badge>
                                                 </td>
                                                 <td className="py-3 px-2 text-right">
-                                                    {r.status === "active" && (
+                                                    {r.status === "ACTIVE" && (
                                                         <button
                                                             onClick={() => suspendRespondent(r.id)}
                                                             className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50"
@@ -303,31 +303,31 @@ export default function AdminPage() {
                                                     {d.category}
                                                 </span>
                                                 <span className="text-xs text-slate-400">
-                                                    {d.view_count} views
+                                                    {d.viewCount} views
                                                 </span>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Badge
                                                 variant={
-                                                    d.status === "published" ? "success" : "default"
+                                                    d.status === "PUBLISHED" ? "success" : "default"
                                                 }
                                             >
-                                                {d.status}
+                                                {d.status.toLowerCase()}
                                             </Badge>
                                             <button
                                                 onClick={() =>
                                                     toggleDataset(
                                                         d.id,
-                                                        d.status === "published" ? "unpublish" : "publish"
+                                                        d.status === "PUBLISHED" ? "unpublish" : "publish"
                                                     )
                                                 }
                                                 className="p-1.5 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-50"
                                                 title={
-                                                    d.status === "published" ? "Unpublish" : "Publish"
+                                                    d.status === "PUBLISHED" ? "Unpublish" : "Publish"
                                                 }
                                             >
-                                                {d.status === "published" ? (
+                                                {d.status === "PUBLISHED" ? (
                                                     <EyeOff className="w-4 h-4" />
                                                 ) : (
                                                     <Eye className="w-4 h-4" />

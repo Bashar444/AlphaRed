@@ -17,7 +17,7 @@ interface Plan {
 interface CurrentSub {
     plan: string;
     status: string;
-    expires_at: string;
+    expiresAt: string;
 }
 
 export default function SubscriptionPage() {
@@ -41,9 +41,9 @@ export default function SubscriptionPage() {
         try {
             const data = await api.subscriptions.checkout(planKey);
             // Redirect to Razorpay or handle checkout flow
-            if (data.order_id) {
+            if (data.orderId || data.order_id) {
                 alert(
-                    `Razorpay order created: ${data.order_id}. Integrate Razorpay checkout JS to complete.`
+                    `Razorpay order created: ${data.orderId || data.order_id}. Integrate Razorpay checkout JS to complete.`
                 );
             }
         } catch {
@@ -100,7 +100,7 @@ export default function SubscriptionPage() {
                                     </p>
                                     <p className="text-xs text-slate-500">
                                         {current.status === "active"
-                                            ? `Active until ${new Date(current.expires_at).toLocaleDateString()}`
+                                            ? `Active until ${new Date(current.expiresAt).toLocaleDateString()}`
                                             : `Status: ${current.status}`}
                                     </p>
                                 </div>

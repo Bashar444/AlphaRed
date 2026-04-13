@@ -14,16 +14,16 @@ import {
 } from "lucide-react";
 
 interface Survey {
-    id: number;
+    id: string;
     title: string;
-    response_count: number;
+    _count?: { responses: number };
 }
 
 interface ExportItem {
-    id: number;
+    id: string;
     format: string;
-    file_url: string;
-    created_at: string;
+    fileUrl: string;
+    createdAt: string;
 }
 
 const formatIcons: Record<string, React.ReactNode> = {
@@ -42,7 +42,7 @@ const formats = [
 
 export default function ExportsPage() {
     const [surveys, setSurveys] = useState<Survey[]>([]);
-    const [selectedId, setSelectedId] = useState<number | null>(null);
+    const [selectedId, setSelectedId] = useState<string | null>(null);
     const [exports, setExports] = useState<ExportItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [generating, setGenerating] = useState<string | null>(null);
@@ -50,7 +50,7 @@ export default function ExportsPage() {
     useEffect(() => {
         api.surveys
             .list()
-            .then((data: Survey[]) => setSurveys(data))
+            .then((data) => setSurveys(Array.isArray(data) ? data as Survey[] : []))
             .catch(() => { })
             .finally(() => setLoading(false));
     }, []);
@@ -59,9 +59,9 @@ export default function ExportsPage() {
         if (selectedId) loadExports(selectedId);
     }, [selectedId]);
 
-    async function loadExports(id: number) {
+    async function loadExports(id: string) {
         try {
-            const data = await api.exports.list(id);
+            const data = await api.exports.list(Number(id));
             setExports(data || []);
         } catch {
             setExports([]);
@@ -72,9 +72,9 @@ export default function ExportsPage() {
         if (!selectedId) return;
         setGenerating(format);
         try {
-            const result = await api.exports.generate(selectedId, format);
-            if (result.download_url) {
-                window.open(result.download_url, "_blank");
+            const result = await api.exports.generate(Number(selectedId), format);
+            if (result.downloadUrl || result.fileUrl) {
+                window.open(result.downloadUrl || result.fileUrl, "_blank");
             }
             await loadExports(selectedId);
         } catch {
@@ -109,13 +109,13 @@ export default function ExportsPage() {
                     </label>
                     <select
                         value={selectedId || ""}
-                        onChange={(e) => setSelectedId(Number(e.target.value) || null)}
+                        onChange={(e) => setSelectedId(e.target.value || null)}
                         className="w-full h-10 px-3 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
                     >
                         <option value="">Choose a survey...</option>
                         {surveys.map((s) => (
                             <option key={s.id} value={s.id}>
-                                {s.title} ({s.response_count || 0} responses)
+                                {s.title} ({s._count?.responses || 0} responses)
                             </option>
                         ))}
                     </select>
@@ -174,15 +174,15 @@ export default function ExportsPage() {
                                                 {exp.format.toUpperCase()} Export
                                             </p>
                                             <p className="text-xs text-slate-500">
-                                                {new Date(exp.created_at).toLocaleDateString()}
+                                                {new Date(exp.createdAt).toLocaleDateString()}
                                             </p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <Badge variant="success">Complete</Badge>
-                                        {exp.file_url && (
+                                        {exp.fileUrl && (
                                             <a
-                                                href={exp.file_url}
+                                                href={exp.fileUrl}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="p-2 rounded-lg hover:bg-slate-100 text-slate-500"

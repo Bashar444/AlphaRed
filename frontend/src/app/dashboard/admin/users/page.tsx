@@ -18,15 +18,13 @@ import {
 } from "lucide-react";
 
 interface UserRow {
-    id: number;
-    first_name: string;
-    last_name: string;
+    id: string;
+    name: string;
     email: string;
-    phone: string;
-    user_type: string;
+    role: string;
     status: string;
-    created_at: string;
-    last_online: string;
+    createdAt: string;
+    lastActiveAt: string;
 }
 
 interface Summary {
@@ -90,15 +88,15 @@ export default function AdminUsersPage() {
         setSearch(searchInput);
     }
 
-    async function handleSuspend(id: number) {
+    async function handleSuspend(id: string) {
         if (!confirm("Suspend this user?")) return;
-        await api.adminUsers.suspend(id);
-        setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, status: "inactive" } : u)));
+        await api.adminUsers.suspend(id as unknown as number);
+        setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, status: "SUSPENDED" } : u)));
     }
 
-    async function handleActivate(id: number) {
-        await api.adminUsers.activate(id);
-        setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, status: "active" } : u)));
+    async function handleActivate(id: string) {
+        await api.adminUsers.activate(id as unknown as number);
+        setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, status: "ACTIVE" } : u)));
     }
 
     if (!user?.is_admin) {
@@ -217,43 +215,41 @@ export default function AdminUsersPage() {
                                         {users.map((u) => (
                                             <tr key={u.id} className="hover:bg-slate-50">
                                                 <td className="py-3 px-2 font-medium text-slate-900">
-                                                    {u.first_name} {u.last_name}
+                                                    {u.name}
                                                 </td>
                                                 <td className="py-3 px-2 text-slate-600">
-                                                    {u.email || u.phone || "—"}
+                                                    {u.email || "—"}
                                                 </td>
                                                 <td className="py-3 px-2">
                                                     <Badge variant="default">
-                                                        {u.user_type}
+                                                        {u.role}
                                                     </Badge>
                                                 </td>
                                                 <td className="py-3 px-2">
-                                                    <Badge variant={u.status === "active" ? "success" : "danger"}>
-                                                        {u.status}
+                                                    <Badge variant={u.status === "ACTIVE" ? "success" : "danger"}>
+                                                        {u.status.toLowerCase()}
                                                     </Badge>
                                                 </td>
                                                 <td className="py-3 px-2 text-slate-500">
-                                                    {u.created_at ? new Date(u.created_at).toLocaleDateString() : "—"}
+                                                    {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}
                                                 </td>
                                                 <td className="py-3 px-2 text-right">
-                                                    {u.status === "active" || u.status === "inactive" ? (
-                                                        u.status === "active" ? (
-                                                            <button
-                                                                onClick={() => handleSuspend(u.id)}
-                                                                className="text-xs text-red-600 hover:underline"
-                                                                title="Suspend"
-                                                            >
-                                                                <Ban className="w-4 h-4 inline" />
-                                                            </button>
-                                                        ) : (
-                                                            <button
-                                                                onClick={() => handleActivate(u.id)}
-                                                                className="text-xs text-emerald-600 hover:underline"
-                                                                title="Activate"
-                                                            >
-                                                                <CheckCircle className="w-4 h-4 inline" />
-                                                            </button>
-                                                        )
+                                                    {u.status === "ACTIVE" ? (
+                                                        <button
+                                                            onClick={() => handleSuspend(u.id)}
+                                                            className="text-xs text-red-600 hover:underline"
+                                                            title="Suspend"
+                                                        >
+                                                            <Ban className="w-4 h-4 inline" />
+                                                        </button>
+                                                    ) : u.status === "SUSPENDED" ? (
+                                                        <button
+                                                            onClick={() => handleActivate(u.id)}
+                                                            className="text-xs text-emerald-600 hover:underline"
+                                                            title="Activate"
+                                                        >
+                                                            <CheckCircle className="w-4 h-4 inline" />
+                                                        </button>
                                                     ) : null}
                                                 </td>
                                             </tr>

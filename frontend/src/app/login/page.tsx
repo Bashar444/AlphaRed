@@ -21,6 +21,22 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(email, password);
+      // Role-based redirect
+      const stored = localStorage.getItem("primo_token");
+      if (stored) {
+        try {
+          const payload = JSON.parse(atob(stored.split('.')[1]));
+          const role = payload.role || "";
+          if (role === "RESPONDENT") {
+            router.push("/dashboard/respondent");
+            return;
+          }
+          if (role === "SUPERADMIN" || role === "MANAGER") {
+            router.push("/dashboard/admin");
+            return;
+          }
+        } catch { /* fall through */ }
+      }
       router.push("/dashboard");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Login failed";

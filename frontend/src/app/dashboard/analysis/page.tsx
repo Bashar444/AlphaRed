@@ -11,22 +11,20 @@ import {
     Brain,
     Loader2,
     FileText,
-    TrendingUp,
 } from "lucide-react";
 
 interface Survey {
-    id: number;
+    id: string;
     title: string;
     status: string;
-    response_count: number;
+    _count?: { responses: number };
 }
 
 interface Report {
-    id: number;
-    descriptive_stats: string;
-    correlation_matrix: string;
-    ai_narrative: string;
-    created_at: string;
+    id: string;
+    results: unknown;
+    aiNarrative: string;
+    createdAt: string;
 }
 
 export default function AnalysisPage() {
@@ -34,9 +32,7 @@ export default function AnalysisPage() {
     const preselected = searchParams.get("survey");
 
     const [surveys, setSurveys] = useState<Survey[]>([]);
-    const [selectedId, setSelectedId] = useState<number | null>(
-        preselected ? Number(preselected) : null
-    );
+    const [selectedId, setSelectedId] = useState<string | null>(preselected || null);
     const [report, setReport] = useState<Report | null>(null);
     const [loading, setLoading] = useState(true);
     const [running, setRunning] = useState(false);
@@ -44,7 +40,7 @@ export default function AnalysisPage() {
     useEffect(() => {
         api.surveys
             .list()
-            .then((data: Survey[]) => setSurveys(data))
+            .then((data) => setSurveys(Array.isArray(data) ? data as Survey[] : []))
             .catch(() => { })
             .finally(() => setLoading(false));
     }, []);
@@ -55,10 +51,10 @@ export default function AnalysisPage() {
         }
     }, [selectedId]);
 
-    async function loadReport(id: number) {
+    async function loadReport(id: string) {
         try {
-            const data = await api.analysis.show(id);
-            setReport(data.report || null);
+            const data = await api.analysis.show(Number(id));
+            setReport(data?.report || data || null);
         } catch {
             setReport(null);
         }
@@ -68,8 +64,8 @@ export default function AnalysisPage() {
         if (!selectedId) return;
         setRunning(true);
         try {
-            const data = await api.analysis.run(selectedId);
-            setReport(data.report);
+            const data = await api.analysis.run(Number(selectedId));
+            setReport(data?.report || data);
         } catch {
             // handle error
         } finally {
@@ -106,13 +102,13 @@ export default function AnalysisPage() {
                             </label>
                             <select
                                 value={selectedId || ""}
-                                onChange={(e) => setSelectedId(Number(e.target.value) || null)}
+                                onChange={(e) => setSelectedId(e.target.value || null)}
                                 className="w-full h-10 px-3 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
                             >
                                 <option value="">Choose a survey...</option>
                                 {surveys.map((s) => (
                                     <option key={s.id} value={s.id}>
-                                        {s.title} ({s.response_count || 0} responses)
+                                        {s.title} ({s._count?.responses || 0} responses)
                                     </option>
                                 ))}
                             </select>
@@ -135,7 +131,7 @@ export default function AnalysisPage() {
             {report ? (
                 <div className="space-y-6">
                     {/* AI Narrative */}
-                    {report.ai_narrative && (
+                    {report.aiNarrative ? (
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
@@ -146,49 +142,30 @@ export default function AnalysisPage() {
                             </CardHeader>
                             <CardContent>
                                 <div className="prose prose-sm max-w-none text-slate-700 leading-relaxed whitespace-pre-wrap">
-                                    {report.ai_narrative}
+                                    {report.aiNarrative}
                                 </div>
                             </CardContent>
                         </Card>
-                    )}
+                    ) : null}
 
-                    {/* Descriptive Stats */}
-                    {report.descriptive_stats && (
+                    {/* Results */}
+                    {report.results ? (
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <BarChart3 className="w-5 h-5 text-emerald-600" />
-                                    Descriptive Statistics
+                                    Statistical Results
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <pre className="text-xs bg-slate-50 rounded-lg p-4 overflow-x-auto whitespace-pre-wrap font-mono">
-                                    {typeof report.descriptive_stats === "string"
-                                        ? report.descriptive_stats
-                                        : JSON.stringify(report.descriptive_stats, null, 2)}
+                                    {typeof report.results === "string"
+                                        ? report.results
+                                        : JSON.stringify(report.results, null, 2)}
                                 </pre>
                             </CardContent>
                         </Card>
-                    )}
-
-                    {/* Correlation */}
-                    {report.correlation_matrix && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <TrendingUp className="w-5 h-5 text-amber-600" />
-                                    Correlation Matrix
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <pre className="text-xs bg-slate-50 rounded-lg p-4 overflow-x-auto whitespace-pre-wrap font-mono">
-                                    {typeof report.correlation_matrix === "string"
-                                        ? report.correlation_matrix
-                                        : JSON.stringify(report.correlation_matrix, null, 2)}
-                                </pre>
-                            </CardContent>
-                        </Card>
-                    )}
+                    ) : null}
                 </div>
             ) : selectedId ? (
                 <Card>

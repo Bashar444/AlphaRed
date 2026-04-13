@@ -40,14 +40,14 @@ const incomeBrackets = [
 export default function TargetingPage() {
     const params = useParams();
     const router = useRouter();
-    const surveyId = Number(params.id);
+    const surveyId = params.id as string;
     const [targeting, setTargeting] = useState<Targeting>({});
     const [saving, setSaving] = useState(false);
     const [loading, setLoading] = useState(true);
 
     const load = useCallback(async () => {
         try {
-            const data = await api.surveys.getTargeting(surveyId);
+            const data = await api.surveys.getTargeting(surveyId as unknown as number);
             setTargeting(data || {});
         } catch {
             // no targeting yet
@@ -67,7 +67,7 @@ export default function TargetingPage() {
     async function handleSave() {
         setSaving(true);
         try {
-            await api.surveys.saveTargeting(surveyId, { ...targeting } as Record<string, unknown>);
+            await api.surveys.saveTargeting(surveyId as unknown as number, { ...targeting } as Record<string, unknown>);
             await load();
         } finally {
             setSaving(false);

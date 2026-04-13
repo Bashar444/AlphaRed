@@ -17,38 +17,52 @@ import {
     Loader2,
 } from "lucide-react";
 
+interface QuestionOption {
+    label: string;
+    value: string;
+}
+
 interface Question {
-    id?: number;
-    question_text: string;
-    question_type: string;
-    options?: string;
-    is_required: number;
-    sort_order: number;
+    id?: string;
+    text: string;
+    type: string;
+    description?: string;
+    options?: QuestionOption[] | null;
+    required: boolean;
+    order: number;
 }
 
 interface Survey {
-    id: number;
+    id: string;
     title: string;
     description: string;
     status: string;
+    questions?: Question[];
 }
 
 const questionTypes = [
-    { value: "multiple_choice", label: "Multiple Choice" },
-    { value: "single_choice", label: "Single Choice" },
-    { value: "text", label: "Short Text" },
-    { value: "textarea", label: "Long Text" },
-    { value: "rating", label: "Rating (1–5)" },
-    { value: "likert", label: "Likert Scale" },
-    { value: "dropdown", label: "Dropdown" },
-    { value: "number", label: "Number" },
-    { value: "date", label: "Date" },
+    { value: "SINGLE_CHOICE", label: "Single Choice" },
+    { value: "MULTIPLE_CHOICE", label: "Multiple Choice" },
+    { value: "SHORT_TEXT", label: "Short Text" },
+    { value: "LONG_TEXT", label: "Long Text" },
+    { value: "RATING", label: "Rating (1-5)" },
+    { value: "LIKERT", label: "Likert Scale" },
+    { value: "DROPDOWN", label: "Dropdown" },
+    { value: "NUMBER", label: "Number" },
+    { value: "DATE", label: "Date" },
+    { value: "YES_NO", label: "Yes / No" },
+    { value: "NET_PROMOTER", label: "Net Promoter Score" },
+    { value: "SLIDER", label: "Slider" },
+    { value: "MATRIX", label: "Matrix" },
+    { value: "RANKING", label: "Ranking" },
 ];
+
+const choiceTypes = ["SINGLE_CHOICE", "MULTIPLE_CHOICE", "DROPDOWN", "LIKERT", "RANKING", "IMAGE_CHOICE"];
 
 export default function SurveyBuilderPage() {
     const params = useParams();
     const router = useRouter();
-    const surveyId = Number(params.id);
+    const surveyId = params.id as string;
 
     const [survey, setSurvey] = useState<Survey | null>(null);
     const [questions, setQuestions] = useState<Question[]>([]);
@@ -60,14 +74,11 @@ export default function SurveyBuilderPage() {
 
     const load = useCallback(async () => {
         try {
-            const [s, q] = await Promise.all([
-                api.surveys.get(surveyId),
-                api.surveys.questions(surveyId),
-            ]);
+            const s = await api.surveys.get(surveyId);
             setSurvey(s);
             setTitle(s.title);
             setDescription(s.description || "");
-            setQuestions(q || []);
+            setQuestions(s.questions || []);
         } catch {
             router.push("/dashboard/surveys");
         } finally {
@@ -83,16 +94,16 @@ export default function SurveyBuilderPage() {
         setSaving(true);
         try {
             await api.surveys.update(surveyId, { title, description });
-            // Save questions
-            for (const q of questions) {
-                const payload = { ...q } as Record<string, unknown>;
-                if (q.id) {
-                    await api.surveys.updateQuestion(surveyId, q.id, payload);
-                } else {
-                    const created = await api.surveys.addQuestion(surveyId, payload);
-                    q.id = created.id;
-                }
-            }
+            // Bulk update questions
+            const payload = questions.map((q, idx) => ({
+                type: q.type,
+                text: q.text,
+                description: q.description || undefined,
+                required: q.required,
+                order: idx + 1,
+                options: q.options && q.options.length > 0 ? q.options : undefined,
+            }));
+            await api.surveys.updateQuestions(surveyId, payload);
             await load();
         } finally {
             setSaving(false);
@@ -115,27 +126,57 @@ export default function SurveyBuilderPage() {
         setQuestions((prev) => [
             ...prev,
             {
-                question_text: "",
-                question_type: "single_choice",
-                options: "",
-                is_required: 1,
-                sort_order: prev.length + 1,
+                text: "",
+                type: "SINGLE_CHOICE",
+                description: "",
+                options: [{ label: "Option 1", value: "option_1" }],
+                required: true,
+                order: prev.length + 1,
             },
         ]);
     }
 
-    function updateQuestion(index: number, field: string, value: string | number) {
+    function updateQuestion(index: number, field: string, value: unknown) {
         setQuestions((prev) =>
             prev.map((q, i) => (i === index ? { ...q, [field]: value } : q))
         );
     }
 
-    async function removeQuestion(index: number) {
-        const q = questions[index];
-        if (q.id) {
-            await api.surveys.deleteQuestion(surveyId, q.id);
-        }
+    function removeQuestion(index: number) {
         setQuestions((prev) => prev.filter((_, i) => i !== index));
+    }
+
+    function addOption(qIdx: number) {
+        setQuestions((prev) =>
+            prev.map((q, i) => {
+                if (i !== qIdx) return q;
+                const opts = [...(q.options || [])];
+                const n = opts.length + 1;
+                opts.push({ label: `Option ${n}`, value: `option_${n}` });
+                return { ...q, options: opts };
+            })
+        );
+    }
+
+    function updateOption(qIdx: number, optIdx: number, label: string) {
+        setQuestions((prev) =>
+            prev.map((q, i) => {
+                if (i !== qIdx) return q;
+                const opts = [...(q.options || [])];
+                opts[optIdx] = { ...opts[optIdx], label, value: label.toLowerCase().replace(/\s+/g, "_") };
+                return { ...q, options: opts };
+            })
+        );
+    }
+
+    function removeOption(qIdx: number, optIdx: number) {
+        setQuestions((prev) =>
+            prev.map((q, i) => {
+                if (i !== qIdx) return q;
+                const opts = (q.options || []).filter((_, j) => j !== optIdx);
+                return { ...q, options: opts };
+            })
+        );
     }
 
     if (loading) {
@@ -160,8 +201,8 @@ export default function SurveyBuilderPage() {
                     <div>
                         <div className="flex items-center gap-2">
                             <h1 className="text-xl font-bold text-slate-900">Survey Builder</h1>
-                            {survey && <Badge variant={survey.status === "live" ? "success" : "default"}>
-                                {survey.status}
+                            {survey && <Badge variant={survey.status === "ACTIVE" ? "success" : "default"}>
+                                {survey.status.toLowerCase()}
                             </Badge>}
                         </div>
                     </div>
@@ -177,7 +218,7 @@ export default function SurveyBuilderPage() {
                     >
                         <Target className="w-4 h-4 mr-2" /> Targeting
                     </Button>
-                    {survey?.status === "draft" && (
+                    {survey?.status === "DRAFT" && (
                         <Button onClick={handleLaunch} disabled={launching}>
                             {launching ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Rocket className="w-4 h-4 mr-2" />}
                             Launch
@@ -243,9 +284,9 @@ export default function SurveyBuilderPage() {
                                             Q{idx + 1}
                                         </span>
                                         <select
-                                            value={q.question_type}
+                                            value={q.type}
                                             onChange={(e) =>
-                                                updateQuestion(idx, "question_type", e.target.value)
+                                                updateQuestion(idx, "type", e.target.value)
                                             }
                                             className="h-8 px-2 rounded border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500"
                                         >
@@ -258,13 +299,9 @@ export default function SurveyBuilderPage() {
                                         <label className="flex items-center gap-1.5 text-xs text-slate-500 ml-auto">
                                             <input
                                                 type="checkbox"
-                                                checked={q.is_required === 1}
+                                                checked={q.required}
                                                 onChange={(e) =>
-                                                    updateQuestion(
-                                                        idx,
-                                                        "is_required",
-                                                        e.target.checked ? 1 : 0
-                                                    )
+                                                    updateQuestion(idx, "required", e.target.checked)
                                                 }
                                                 className="rounded border-slate-300 text-violet-600 focus:ring-violet-500"
                                             />
@@ -280,32 +317,52 @@ export default function SurveyBuilderPage() {
 
                                     <input
                                         type="text"
-                                        value={q.question_text}
+                                        value={q.text}
                                         onChange={(e) =>
-                                            updateQuestion(idx, "question_text", e.target.value)
+                                            updateQuestion(idx, "text", e.target.value)
                                         }
                                         className="w-full h-10 px-3 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
                                         placeholder="Enter your question..."
                                     />
 
-                                    {["multiple_choice", "single_choice", "dropdown", "likert"].includes(
-                                        q.question_type
-                                    ) && (
-                                            <div>
-                                                <label className="block text-xs text-slate-500 mb-1">
-                                                    Options (one per line)
-                                                </label>
-                                                <textarea
-                                                    value={q.options || ""}
-                                                    onChange={(e) =>
-                                                        updateQuestion(idx, "options", e.target.value)
-                                                    }
-                                                    rows={4}
-                                                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none font-mono"
-                                                    placeholder={"Option 1\nOption 2\nOption 3"}
-                                                />
-                                            </div>
-                                        )}
+                                    <input
+                                        type="text"
+                                        value={q.description || ""}
+                                        onChange={(e) =>
+                                            updateQuestion(idx, "description", e.target.value)
+                                        }
+                                        className="w-full h-9 px-3 rounded-lg border border-slate-200 text-xs text-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                                        placeholder="Optional description or help text..."
+                                    />
+
+                                    {choiceTypes.includes(q.type) && (
+                                        <div className="space-y-2">
+                                            <label className="block text-xs text-slate-500">Options</label>
+                                            {(q.options || []).map((opt, optIdx) => (
+                                                <div key={optIdx} className="flex items-center gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={opt.label}
+                                                        onChange={(e) => updateOption(idx, optIdx, e.target.value)}
+                                                        className="flex-1 h-8 px-3 rounded border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                                                        placeholder={`Option ${optIdx + 1}`}
+                                                    />
+                                                    <button
+                                                        onClick={() => removeOption(idx, optIdx)}
+                                                        className="p-1 text-slate-400 hover:text-red-500"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            <button
+                                                onClick={() => addOption(idx)}
+                                                className="text-xs text-violet-600 hover:text-violet-700 font-medium"
+                                            >
+                                                + Add option
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </CardContent>

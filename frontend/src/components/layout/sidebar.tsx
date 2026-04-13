@@ -33,7 +33,9 @@ import {
     Target,
     Ticket,
     Timer,
+    User,
     Users,
+    Wallet,
 } from "lucide-react";
 
 const mainNav = [
@@ -43,6 +45,15 @@ const mainNav = [
     { href: "/dashboard/exports", label: "Exports", icon: Download },
     { href: "/dashboard/api-keys", label: "API Keys", icon: Key },
     { href: "/dashboard/subscription", label: "Subscription", icon: CreditCard },
+];
+
+const respondentNav = [
+    { href: "/dashboard/respondent", label: "Home", icon: LayoutDashboard },
+    { href: "/dashboard/respondent/surveys", label: "Available Surveys", icon: ClipboardList },
+    { href: "/dashboard/respondent/history", label: "My Responses", icon: FileText },
+    { href: "/dashboard/respondent/earnings", label: "Earnings", icon: Wallet },
+    { href: "/dashboard/respondent/payouts", label: "Payouts", icon: DollarSign },
+    { href: "/dashboard/respondent/profile", label: "My Profile", icon: User },
 ];
 
 const businessNav = [
@@ -83,12 +94,41 @@ const adminNav = [
     { href: "/dashboard/admin/cms", label: "CMS", icon: FileText },
 ];
 
+function NavSection({ label, items, pathname }: { label: string; items: typeof mainNav; pathname: string }) {
+    return (
+        <>
+            <div className="pt-4" />
+            <p className="px-3 text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">
+                {label}
+            </p>
+            {items.map((item) => {
+                const active = pathname === item.href || (item.href !== "/dashboard" && pathname?.startsWith(item.href + "/"));
+                return (
+                    <Link
+                        key={item.href}
+                        href={item.href}
+                        className={cn(
+                            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                            active
+                                ? "bg-violet-600/20 text-violet-400"
+                                : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                        )}
+                    >
+                        <item.icon className="w-4 h-4" />
+                        {item.label}
+                    </Link>
+                );
+            })}
+        </>
+    );
+}
+
 export function Sidebar() {
     const pathname = usePathname();
     const { user, logout } = useAuth();
 
-    // RBAC: staff and admin users see Business & Team sections
     const isStaff = user?.role === 'SUPERADMIN' || user?.role === 'MANAGER' || user?.role === 'AGENT' || user?.is_admin;
+    const isRespondent = user?.role === 'RESPONDENT';
 
     return (
         <aside className="flex flex-col w-64 min-h-screen bg-slate-950 text-white border-r border-slate-800">
@@ -100,39 +140,15 @@ export function Sidebar() {
                 <span className="text-lg font-semibold tracking-tight">PrimoData</span>
             </div>
 
-            {/* Main Nav */}
             <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-                <p className="px-3 text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">
-                    Platform
-                </p>
-                {mainNav.map((item) => {
-                    const active = pathname === item.href || pathname?.startsWith(item.href + "/");
-                    return (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className={cn(
-                                "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                                active
-                                    ? "bg-violet-600/20 text-violet-400"
-                                    : "text-slate-400 hover:bg-slate-800 hover:text-white"
-                            )}
-                        >
-                            <item.icon className="w-4 h-4" />
-                            {item.label}
-                        </Link>
-                    );
-                })}
-
-                {/* Business section — staff/admin only */}
-                {isStaff && (
+                {isRespondent ? (
+                    /* ── Respondent sidebar ── */
                     <>
-                        <div className="pt-4" />
                         <p className="px-3 text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">
-                            Business
+                            Respondent Panel
                         </p>
-                        {businessNav.map((item) => {
-                            const active = pathname === item.href || pathname?.startsWith(item.href + "/");
+                        {respondentNav.map((item) => {
+                            const active = pathname === item.href || (item.href !== "/dashboard/respondent" && pathname?.startsWith(item.href));
                             return (
                                 <Link
                                     key={item.href}
@@ -150,17 +166,14 @@ export function Sidebar() {
                             );
                         })}
                     </>
-                )}
-
-                {/* Team section — staff/admin only */}
-                {isStaff && (
+                ) : (
+                    /* ── Researcher / Admin sidebar ── */
                     <>
-                        <div className="pt-4" />
                         <p className="px-3 text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">
-                            Team
+                            Platform
                         </p>
-                        {teamNav.map((item) => {
-                            const active = pathname === item.href || pathname?.startsWith(item.href + "/");
+                        {mainNav.map((item) => {
+                            const active = pathname === item.href || (item.href !== "/dashboard" && pathname?.startsWith(item.href + "/"));
                             return (
                                 <Link
                                     key={item.href}
@@ -177,58 +190,11 @@ export function Sidebar() {
                                 </Link>
                             );
                         })}
-                    </>
-                )}
 
-                {/* Tools section */}
-                <div className="pt-4" />
-                <p className="px-3 text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">
-                    Tools
-                </p>
-                {toolsNav.map((item) => {
-                    const active = pathname === item.href || pathname?.startsWith(item.href + "/");
-                    return (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className={cn(
-                                "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                                active
-                                    ? "bg-violet-600/20 text-violet-400"
-                                    : "text-slate-400 hover:bg-slate-800 hover:text-white"
-                            )}
-                        >
-                            <item.icon className="w-4 h-4" />
-                            {item.label}
-                        </Link>
-                    );
-                })}
-
-                {/* Admin section */}
-                {user?.is_admin && (
-                    <>
-                        <div className="pt-4" />
-                        <p className="px-3 text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">
-                            Administration
-                        </p>
-                        {adminNav.map((item) => {
-                            const active = pathname === item.href;
-                            return (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    className={cn(
-                                        "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                                        active
-                                            ? "bg-violet-600/20 text-violet-400"
-                                            : "text-slate-400 hover:bg-slate-800 hover:text-white"
-                                    )}
-                                >
-                                    <item.icon className="w-4 h-4" />
-                                    {item.label}
-                                </Link>
-                            );
-                        })}
+                        {isStaff && <NavSection label="Business" items={businessNav} pathname={pathname} />}
+                        {isStaff && <NavSection label="Team" items={teamNav} pathname={pathname} />}
+                        <NavSection label="Tools" items={toolsNav} pathname={pathname} />
+                        {user?.is_admin && <NavSection label="Administration" items={adminNav} pathname={pathname} />}
                     </>
                 )}
             </nav>

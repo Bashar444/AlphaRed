@@ -17,20 +17,20 @@ import {
 } from "lucide-react";
 
 interface Survey {
-    id: number;
+    id: string;
     title: string;
     description: string;
     status: string;
-    response_count: number;
-    question_count: number;
-    created_at: string;
+    _count?: { questions: number; responses: number };
+    createdAt: string;
 }
 
 const statusColor: Record<string, "success" | "warning" | "info" | "default"> = {
-    live: "success",
-    draft: "default",
-    closed: "warning",
-    completed: "info",
+    ACTIVE: "success",
+    DRAFT: "default",
+    PAUSED: "warning",
+    COMPLETED: "info",
+    ARCHIVED: "default",
 };
 
 export default function SurveysPage() {
@@ -46,7 +46,7 @@ export default function SurveysPage() {
     async function loadSurveys() {
         try {
             const data = await api.surveys.list();
-            setSurveys(data);
+            setSurveys(Array.isArray(data) ? data as Survey[] : []);
         } catch {
             setSurveys([]);
         } finally {
@@ -67,10 +67,10 @@ export default function SurveysPage() {
         }
     }
 
-    async function handleDelete(id: number) {
+    async function handleDelete(id: string) {
         if (!confirm("Delete this survey? This action cannot be undone.")) return;
         try {
-            await api.surveys.delete(id);
+            await api.surveys.delete(id as unknown as number);
             setSurveys((prev) => prev.filter((s) => s.id !== id));
         } catch {
             // ignore
@@ -128,7 +128,7 @@ export default function SurveysPage() {
                                     </div>
                                     <div className="flex items-center gap-1">
                                         <Badge variant={statusColor[survey.status] || "default"}>
-                                            {survey.status}
+                                            {survey.status.toLowerCase()}
                                         </Badge>
                                         <button
                                             onClick={() => handleDelete(survey.id)}
@@ -153,11 +153,11 @@ export default function SurveysPage() {
                                 <div className="flex items-center gap-4 mt-4 pt-4 border-t border-slate-100">
                                     <div className="flex items-center gap-1.5 text-xs text-slate-500">
                                         <MoreVertical className="w-3.5 h-3.5" />
-                                        {survey.question_count || 0} questions
+                                        {survey._count?.questions || 0} questions
                                     </div>
                                     <div className="flex items-center gap-1.5 text-xs text-slate-500">
                                         <Eye className="w-3.5 h-3.5" />
-                                        {survey.response_count || 0} responses
+                                        {survey._count?.responses || 0} responses
                                     </div>
                                 </div>
 

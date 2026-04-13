@@ -8,17 +8,16 @@ import { Badge } from "@/components/ui/badge";
 import { Users, Shield, Ban, Search, CheckCircle } from "lucide-react";
 
 interface Respondent {
-    id: number;
-    first_name: string;
-    last_name: string;
+    id: string;
+    name: string;
     email: string;
     phone: string;
     status: string;
     age: number;
     gender: string;
-    location_state: string;
-    location_city: string;
-    created_at: string;
+    locationState: string;
+    locationCity: string;
+    createdAt: string;
 }
 
 export default function AdminRespondentsPage() {
@@ -42,12 +41,12 @@ export default function AdminRespondentsPage() {
         }
     }
 
-    async function handleSuspend(id: number) {
+    async function handleSuspend(id: string) {
         if (!confirm("Suspend this respondent?")) return;
         try {
-            await api.admin.suspendRespondent(id);
+            await api.admin.suspendRespondent(id as unknown as number);
             setRespondents((prev) =>
-                prev.map((r) => (r.id === id ? { ...r, status: "suspended" } : r))
+                prev.map((r) => (r.id === id ? { ...r, status: "SUSPENDED" } : r))
             );
         } catch {
             // ignore
@@ -58,14 +57,14 @@ export default function AdminRespondentsPage() {
         if (!search) return true;
         const q = search.toLowerCase();
         return (
-            `${r.first_name} ${r.last_name}`.toLowerCase().includes(q) ||
+            r.name?.toLowerCase().includes(q) ||
             r.email?.toLowerCase().includes(q) ||
-            r.location_state?.toLowerCase().includes(q)
+            r.locationState?.toLowerCase().includes(q)
         );
     });
 
-    const activeCount = respondents.filter((r) => r.status === "active").length;
-    const suspendedCount = respondents.filter((r) => r.status === "suspended").length;
+    const activeCount = respondents.filter((r) => r.status === "ACTIVE").length;
+    const suspendedCount = respondents.filter((r) => r.status === "SUSPENDED").length;
 
     if (!user?.is_admin) {
         return (
@@ -157,19 +156,19 @@ export default function AdminRespondentsPage() {
                                     {filtered.map((r) => (
                                         <tr key={r.id} className="hover:bg-slate-50">
                                             <td className="py-3 px-2 font-medium text-slate-900">
-                                                {r.first_name} {r.last_name}
+                                                {r.name}
                                             </td>
                                             <td className="py-3 px-2 text-slate-600">{r.email}</td>
                                             <td className="py-3 px-2 text-slate-600">{r.age || "—"}</td>
                                             <td className="py-3 px-2 text-slate-600">{r.gender || "—"}</td>
-                                            <td className="py-3 px-2 text-slate-600">{r.location_state || "—"}</td>
+                                            <td className="py-3 px-2 text-slate-600">{r.locationState || "—"}</td>
                                             <td className="py-3 px-2">
-                                                <Badge variant={r.status === "active" ? "success" : "danger"}>
-                                                    {r.status}
+                                                <Badge variant={r.status === "ACTIVE" ? "success" : "danger"}>
+                                                    {r.status.toLowerCase()}
                                                 </Badge>
                                             </td>
                                             <td className="py-3 px-2 text-right">
-                                                {r.status === "active" ? (
+                                                {r.status === "ACTIVE" ? (
                                                     <button
                                                         onClick={() => handleSuspend(r.id)}
                                                         className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50"

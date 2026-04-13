@@ -1,6 +1,6 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
 
-type Method = "GET" | "POST" | "PUT" | "DELETE";
+type Method = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 
 function getToken(): string | null {
     if (typeof window === "undefined") return null;
@@ -48,18 +48,30 @@ export const auth = {
 
 // ── Surveys ─────────────────────────────────────
 export const surveys = {
-    list: () => request("GET", "/surveys"),
-    get: (id: number) => request("GET", `/surveys/${id}`),
+    list: async (params?: Record<string, string>) => {
+        const qs = params ? "?" + new URLSearchParams(params).toString() : "";
+        const res = await request<{ surveys: unknown[]; pagination: unknown }>("GET", `/surveys${qs}`);
+        // Backend returns { surveys, pagination }; return the array for convenience
+        return Array.isArray(res) ? res : (res?.surveys ?? []);
+    },
+    listWithPagination: (params?: Record<string, string>) => {
+        const qs = params ? "?" + new URLSearchParams(params).toString() : "";
+        return request("GET", `/surveys${qs}`);
+    },
+    get: (id: string | number) => request("GET", `/surveys/${id}`),
     create: (data: Record<string, unknown>) => request("POST", "/surveys", data),
-    update: (id: number, data: Record<string, unknown>) => request("PUT", `/surveys/${id}`, data),
-    delete: (id: number) => request("DELETE", `/surveys/${id}`),
-    questions: (surveyId: number) => request("GET", `/surveys/${surveyId}/questions`),
-    addQuestion: (surveyId: number, data: Record<string, unknown>) => request("POST", `/surveys/${surveyId}/questions`, data),
-    updateQuestion: (surveyId: number, qId: number, data: Record<string, unknown>) => request("PUT", `/surveys/${surveyId}/questions/${qId}`, data),
-    deleteQuestion: (surveyId: number, qId: number) => request("DELETE", `/surveys/${surveyId}/questions/${qId}`),
-    getTargeting: (id: number) => request("GET", `/surveys/${id}/targeting`),
-    saveTargeting: (id: number, data: Record<string, unknown>) => request("PUT", `/surveys/${id}/targeting`, data),
-    launch: (id: number, data: Record<string, unknown>) => request("POST", `/surveys/${id}/launch`, data),
+    update: (id: string | number, data: Record<string, unknown>) => request("PUT", `/surveys/${id}`, data),
+    delete: (id: string | number) => request("DELETE", `/surveys/${id}`),
+    // Backend returns questions embedded in GET /surveys/:id, but also supports bulk update
+    updateQuestions: (surveyId: string | number, questions: Record<string, unknown>[]) =>
+        request("PUT", `/surveys/${surveyId}/questions`, { questions }),
+    getTargeting: (id: string | number) => request("GET", `/surveys/${id}/targeting`),
+    saveTargeting: (id: string | number, data: Record<string, unknown>) => request("PUT", `/surveys/${id}/targeting`, data),
+    launch: (id: string | number, data: Record<string, unknown>) => request("POST", `/surveys/${id}/launch`, data),
+    pause: (id: string | number) => request("PATCH", `/surveys/${id}/pause`),
+    complete: (id: string | number) => request("PATCH", `/surveys/${id}/complete`),
+    archive: (id: string | number) => request("PATCH", `/surveys/${id}/archive`),
+    stats: (id: string | number) => request("GET", `/surveys/${id}/stats`),
 };
 
 // ── Responses ───────────────────────────────────
@@ -160,6 +172,19 @@ export const publicCms = {
     menus: () => request("GET", "/public/cms/menus"),
     footer: () => request("GET", "/public/cms/footer"),
     page: (slug: string) => request("GET", `/public/cms/pages/${slug}`),
+};
+
+// ── Respondent Self-Service ─────────────────────
+export const respondent = {
+    profile: () => request("GET", "/respondents/me"),
+    updateProfile: (data: Record<string, unknown>) => request("PUT", "/respondents/me", data),
+    invitations: () => request("GET", "/respondents/me/invitations"),
+    acceptInvitation: (invitationId: string) => request("POST", `/respondents/me/invitations/${invitationId}/accept`),
+    startSurvey: (surveyId: string) => request("POST", `/respondents/me/surveys/${surveyId}/start`),
+    submitResponse: (surveyId: string, data: Record<string, unknown>) => request("POST", `/respondents/me/surveys/${surveyId}/submit`, data),
+    earnings: () => request("GET", "/respondents/me/earnings"),
+    payouts: () => request("GET", "/respondents/me/payouts"),
+    requestPayout: (data: Record<string, unknown>) => request("POST", "/respondents/me/payouts", data),
 };
 
 // ── RISE CRM Modules (Phase H) ──────────────────
@@ -305,6 +330,7 @@ export const api = {
     adminCms,
     publicCms,
     public: publicApi,
+    respondent,
     projects,
     tasks,
     invoices,

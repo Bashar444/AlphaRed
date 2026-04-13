@@ -14,12 +14,12 @@ import {
 } from "lucide-react";
 
 interface Dataset {
-    id: number;
+    id: string;
     title: string;
     status: string;
-    view_count: number;
+    viewCount: number;
     category: string;
-    created_at: string;
+    createdAt: string;
 }
 
 export default function AdminDatasetsPage() {
@@ -43,10 +43,10 @@ export default function AdminDatasetsPage() {
         }
     }
 
-    async function toggleDataset(id: number, action: "publish" | "unpublish") {
+    async function toggleDataset(id: string, action: "publish" | "unpublish") {
         try {
-            if (action === "publish") await api.admin.publishDataset(id);
-            else await api.admin.unpublishDataset(id);
+            if (action === "publish") await api.admin.publishDataset(id as unknown as number);
+            else await api.admin.unpublishDataset(id as unknown as number);
             setDatasets((prev) =>
                 prev.map((d) =>
                     d.id === id
@@ -160,7 +160,7 @@ export default function AdminDatasetsPage() {
                                         <tr key={d.id} className="hover:bg-slate-50">
                                             <td className="py-3 px-2 font-medium text-slate-900">{d.title}</td>
                                             <td className="py-3 px-2 text-slate-600">{d.category || "—"}</td>
-                                            <td className="py-3 px-2 text-slate-600">{d.view_count}</td>
+                                            <td className="py-3 px-2 text-slate-600">{d.viewCount}</td>
                                             <td className="py-3 px-2">
                                                 <Badge variant={d.status === "published" ? "success" : "default"}>
                                                     {d.status}

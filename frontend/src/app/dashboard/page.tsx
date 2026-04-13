@@ -25,13 +25,8 @@ interface DashboardData {
     total_responses: number;
     active_surveys: number;
     avg_quality: number;
-    recent_surveys: Array<{
-        id: number;
-        title: string;
-        status: string;
-        response_count: number;
-        created_at: string;
-    }>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    recent_surveys: any[];
 }
 
 interface AdminStats {
@@ -78,10 +73,11 @@ export default function DashboardPage() {
     async function loadBasicData() {
         try {
             const surveys = await api.surveys.list();
-            const total = surveys.length;
-            const active = surveys.filter((s: { status: string }) => s.status === "live").length;
-            const totalResponses = surveys.reduce(
-                (sum: number, s: { response_count?: number }) => sum + (s.response_count || 0),
+            const list = Array.isArray(surveys) ? surveys : [];
+            const total = list.length;
+            const active = list.filter((s: { status: string }) => s.status === "ACTIVE").length;
+            const totalResponses = list.reduce(
+                (sum: number, s: { _count?: { responses?: number } }) => sum + (s._count?.responses || 0),
                 0
             );
             setData({
@@ -89,7 +85,7 @@ export default function DashboardPage() {
                 total_responses: totalResponses,
                 active_surveys: active,
                 avg_quality: 0,
-                recent_surveys: surveys.slice(0, 5),
+                recent_surveys: list.slice(0, 5),
             });
         } catch {
             setData({ total_surveys: 0, total_responses: 0, active_surveys: 0, avg_quality: 0, recent_surveys: [] });
@@ -264,18 +260,18 @@ export default function DashboardPage() {
                                             </div>
                                             <div>
                                                 <p className="text-sm font-medium text-slate-900">{survey.title}</p>
-                                                <p className="text-xs text-slate-500">{survey.response_count || 0} responses</p>
+                                                <p className="text-xs text-slate-500">{survey._count?.responses || 0} responses</p>
                                             </div>
                                         </div>
                                         <span
-                                            className={`text-xs font-medium px-2.5 py-1 rounded-full ${survey.status === "live"
+                                            className={`text-xs font-medium px-2.5 py-1 rounded-full ${survey.status === "ACTIVE"
                                                 ? "bg-emerald-50 text-emerald-700"
-                                                : survey.status === "draft"
+                                                : survey.status === "DRAFT"
                                                     ? "bg-slate-100 text-slate-600"
                                                     : "bg-amber-50 text-amber-700"
                                                 }`}
                                         >
-                                            {survey.status}
+                                            {survey.status.toLowerCase()}
                                         </span>
                                     </div>
                                 ))}

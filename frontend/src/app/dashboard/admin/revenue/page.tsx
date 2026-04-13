@@ -15,8 +15,8 @@ import {
 interface Revenue {
     monthly: Array<{ month: string; amount: number; count: number }>;
     total: number;
-    this_month: number;
-    active_subscriptions: number;
+    thisMonth: number;
+    activeSubscriptions: number;
 }
 
 export default function AdminRevenuePage() {
@@ -77,12 +77,12 @@ export default function AdminRevenuePage() {
                 />
                 <StatCard
                     title="This Month"
-                    value={`₹${(revenue?.this_month || 0).toLocaleString()}`}
+                    value={`₹${(revenue?.thisMonth || 0).toLocaleString()}`}
                     icon={<TrendingUp className="w-5 h-5" />}
                 />
                 <StatCard
                     title="Active Subscriptions"
-                    value={revenue?.active_subscriptions || 0}
+                    value={revenue?.activeSubscriptions || 0}
                     icon={<CreditCard className="w-5 h-5" />}
                 />
             </div>

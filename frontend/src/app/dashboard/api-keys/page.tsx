@@ -15,13 +15,13 @@ import {
 } from "lucide-react";
 
 interface ApiKey {
-    id: number;
+    id: string;
     name: string;
     status: string;
-    request_count: number;
-    last_used_at: string | null;
-    expires_at: string | null;
-    created_at: string;
+    requestCount: number;
+    lastUsedAt: string | null;
+    expiresAt: string | null;
+    createdAt: string;
 }
 
 export default function ApiKeysPage() {
@@ -53,7 +53,7 @@ export default function ApiKeysPage() {
         setCreating(true);
         try {
             const res = await api.apiKeys.create(newKeyName.trim());
-            setNewKeyResult(res.api_key);
+            setNewKeyResult(res.apiKey || res.api_key);
             setNewKeyName("");
             loadKeys();
         } catch {
@@ -63,20 +63,20 @@ export default function ApiKeysPage() {
         }
     }
 
-    async function handleRevoke(id: number) {
+    async function handleRevoke(id: string) {
         if (!confirm("Revoke this API key? It will no longer work.")) return;
         try {
-            await api.apiKeys.revoke(id);
+            await api.apiKeys.revoke(id as unknown as number);
             setKeys((prev) => prev.map((k) => (k.id === id ? { ...k, status: "revoked" } : k)));
         } catch {
             alert("Failed to revoke key");
         }
     }
 
-    async function handleDelete(id: number) {
+    async function handleDelete(id: string) {
         if (!confirm("Delete this API key permanently?")) return;
         try {
-            await api.apiKeys.remove(id);
+            await api.apiKeys.remove(id as unknown as number);
             setKeys((prev) => prev.filter((k) => k.id !== id));
         } catch {
             alert("Failed to delete key");
@@ -193,19 +193,19 @@ export default function ApiKeysPage() {
                                         <p className="text-sm font-medium text-slate-900">{k.name}</p>
                                         <div className="flex items-center gap-3 mt-1">
                                             <span className="text-xs text-slate-400">
-                                                Created {new Date(k.created_at).toLocaleDateString()}
+                                                Created {new Date(k.createdAt).toLocaleDateString()}
                                             </span>
                                             <span className="text-xs text-slate-400">
-                                                {k.request_count} requests
+                                                {k.requestCount} requests
                                             </span>
-                                            {k.last_used_at && (
+                                            {k.lastUsedAt && (
                                                 <span className="text-xs text-slate-400">
-                                                    Last used {new Date(k.last_used_at).toLocaleDateString()}
+                                                    Last used {new Date(k.lastUsedAt).toLocaleDateString()}
                                                 </span>
                                             )}
-                                            {k.expires_at && (
+                                            {k.expiresAt && (
                                                 <span className="text-xs text-slate-400">
-                                                    Expires {new Date(k.expires_at).toLocaleDateString()}
+                                                    Expires {new Date(k.expiresAt).toLocaleDateString()}
                                                 </span>
                                             )}
                                         </div>
