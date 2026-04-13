@@ -31,8 +31,7 @@ export function Topbar({ title }: { title?: string }) {
 
                 {/* Avatar */}
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-xs font-semibold">
-                    {user?.first_name?.[0]}
-                    {user?.last_name?.[0]}
+                    {user?.name?.[0]}
                 </div>
             </div>
         </header>

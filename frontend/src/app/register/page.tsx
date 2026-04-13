@@ -10,11 +10,10 @@ export default function RegisterPage() {
     const router = useRouter();
     const { register } = useAuth();
     const [form, setForm] = useState({
-        first_name: "",
-        last_name: "",
+        name: "",
         email: "",
         password: "",
-        user_type: "researcher",
+        organization: "",
     });
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState("");
@@ -83,27 +82,15 @@ export default function RegisterPage() {
 
                     <form onSubmit={handleSubmit} className="mt-8 space-y-5">
                         <div className="grid grid-cols-2 gap-4">
-                            <div>
+                            <div className="col-span-2">
                                 <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                                    First name
+                                    Full name
                                 </label>
                                 <input
                                     type="text"
                                     required
-                                    value={form.first_name}
-                                    onChange={(e) => set("first_name", e.target.value)}
-                                    className="w-full h-11 px-3 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                                    Last name
-                                </label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={form.last_name}
-                                    onChange={(e) => set("last_name", e.target.value)}
+                                    value={form.name}
+                                    onChange={(e) => set("name", e.target.value)}
                                     className="w-full h-11 px-3 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
                                 />
                             </div>
@@ -149,26 +136,15 @@ export default function RegisterPage() {
 
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                                I am a
+                                Organization (optional)
                             </label>
-                            <div className="grid grid-cols-2 gap-3">
-                                {[
-                                    { value: "researcher", label: "Researcher" },
-                                    { value: "respondent", label: "Respondent" },
-                                ].map((opt) => (
-                                    <button
-                                        key={opt.value}
-                                        type="button"
-                                        onClick={() => set("user_type", opt.value)}
-                                        className={`h-11 rounded-lg border text-sm font-medium transition-colors ${form.user_type === opt.value
-                                                ? "border-violet-500 bg-violet-50 text-violet-700"
-                                                : "border-slate-300 text-slate-600 hover:bg-slate-50"
-                                            }`}
-                                    >
-                                        {opt.label}
-                                    </button>
-                                ))}
-                            </div>
+                            <input
+                                type="text"
+                                value={form.organization}
+                                onChange={(e) => set("organization", e.target.value)}
+                                className="w-full h-11 px-3 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                                placeholder="University, company, etc."
+                            />
                         </div>
 
                         <button

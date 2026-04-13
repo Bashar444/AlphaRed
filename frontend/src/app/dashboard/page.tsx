@@ -139,7 +139,7 @@ export default function DashboardPage() {
         <div className="space-y-6">
             <div>
                 <h1 className="text-2xl font-bold text-slate-900">
-                    Welcome back, {user?.first_name || "Researcher"}
+                    Welcome back, {user?.name || "Researcher"}
                 </h1>
                 <p className="text-sm text-slate-500 mt-1">
                     Here&apos;s an overview of your platform analytics
@@ -269,10 +269,10 @@ export default function DashboardPage() {
                                         </div>
                                         <span
                                             className={`text-xs font-medium px-2.5 py-1 rounded-full ${survey.status === "live"
-                                                    ? "bg-emerald-50 text-emerald-700"
-                                                    : survey.status === "draft"
-                                                        ? "bg-slate-100 text-slate-600"
-                                                        : "bg-amber-50 text-amber-700"
+                                                ? "bg-emerald-50 text-emerald-700"
+                                                : survey.status === "draft"
+                                                    ? "bg-slate-100 text-slate-600"
+                                                    : "bg-amber-50 text-amber-700"
                                                 }`}
                                         >
                                             {survey.status}

@@ -4,14 +4,14 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 import { auth as authApi } from "@/lib/api";
 
 interface User {
-    id: number;
-    first_name: string;
-    last_name: string;
+    id: string;
+    name: string;
     email: string;
-    user_type: string;
-    is_admin: boolean;
-    image: string;
+    role: string;
+    avatarUrl: string | null;
+    organization: string | null;
     status: string;
+    is_admin: boolean;
 }
 
 interface AuthState {
@@ -45,7 +45,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             authApi
                 .me(stored)
                 .then((res) => {
-                    setUser(res as unknown as User);
+                    const u = res as unknown as User;
+                    setUser({ ...u, is_admin: u.role === 'SUPERADMIN' || u.role === 'MANAGER' });
                 })
                 .catch(() => {
                     localStorage.removeItem("primo_token");
@@ -59,18 +60,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const login = useCallback(async (email: string, password: string) => {
         const res = await authApi.login(email, password);
-        const { token: t, user: u } = res as unknown as { token: string; user: User };
-        localStorage.setItem("primo_token", t);
-        setToken(t);
-        setUser(u);
+        const { accessToken, user: u } = res as unknown as { accessToken: string; refreshToken: string; user: User };
+        const enriched = { ...u, is_admin: u.role === 'SUPERADMIN' || u.role === 'MANAGER' };
+        localStorage.setItem("primo_token", accessToken);
+        setToken(accessToken);
+        setUser(enriched);
     }, []);
 
     const register = useCallback(async (data: Record<string, unknown>) => {
         const res = await authApi.register(data);
-        const { token: t, user: u } = res as unknown as { token: string; user: User };
-        localStorage.setItem("primo_token", t);
-        setToken(t);
-        setUser(u);
+        const { accessToken, user: u } = res as unknown as { accessToken: string; refreshToken: string; user: User };
+        const enriched = { ...u, is_admin: u.role === 'SUPERADMIN' || u.role === 'MANAGER' };
+        localStorage.setItem("primo_token", accessToken);
+        setToken(accessToken);
+        setUser(enriched);
     }, []);
 
     const logout = useCallback(() => {

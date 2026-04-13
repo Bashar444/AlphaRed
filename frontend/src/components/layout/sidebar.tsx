@@ -88,7 +88,7 @@ export function Sidebar() {
     const { user, logout } = useAuth();
 
     // RBAC: staff and admin users see Business & Team sections
-    const isStaff = user?.user_type === "staff" || user?.is_admin;
+    const isStaff = user?.role === 'SUPERADMIN' || user?.role === 'MANAGER' || user?.role === 'AGENT' || user?.is_admin;
 
     return (
         <aside className="flex flex-col w-64 min-h-screen bg-slate-950 text-white border-r border-slate-800">
@@ -237,12 +237,11 @@ export function Sidebar() {
             <div className="border-t border-slate-800 px-4 py-3">
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-xs font-medium">
-                        {user?.first_name?.[0]}
-                        {user?.last_name?.[0]}
+                        {user?.name?.[0]}
                     </div>
                     <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">
-                            {user?.first_name} {user?.last_name}
+                            {user?.name}
                         </p>
                         <p className="text-xs text-slate-500 truncate">{user?.email}</p>
                     </div>

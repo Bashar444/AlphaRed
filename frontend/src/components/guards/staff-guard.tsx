@@ -11,7 +11,7 @@ import { useEffect } from "react";
 export default function StaffLayout({ children }: { children: React.ReactNode }) {
     const { user, loading } = useAuth();
     const router = useRouter();
-    const isStaff = user?.user_type === "staff" || user?.is_admin;
+    const isStaff = user?.role === 'SUPERADMIN' || user?.role === 'MANAGER' || user?.role === 'AGENT' || user?.is_admin;
 
     useEffect(() => {
         if (!loading && user && !isStaff) {
