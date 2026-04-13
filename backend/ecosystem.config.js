@@ -1,3 +1,5 @@
+require('dotenv').config({ path: __dirname + '/.env.production' });
+
 module.exports = {
     apps: [
         {
@@ -8,6 +10,10 @@ module.exports = {
             env: {
                 NODE_ENV: 'production',
                 PORT: 4000,
+                DATABASE_URL: process.env.DATABASE_URL,
+                JWT_SECRET: process.env.JWT_SECRET,
+                JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
+                REDIS_URL: process.env.REDIS_URL,
             },
             max_memory_restart: '500M',
             log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
