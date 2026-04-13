@@ -105,7 +105,7 @@ const adminSurveyOpsNav = [
 
 const adminSettingsNav = [
     { href: "/dashboard/admin/cms", label: "CMS Pages", icon: Globe },
-    { href: "/dashboard/subscription", label: "Plans", icon: CreditCard },
+    { href: "/dashboard/admin/subscriptions", label: "Subscriptions", icon: CreditCard },
     { href: "/dashboard/api-keys", label: "API Keys", icon: Key },
 ];
 

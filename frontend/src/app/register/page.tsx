@@ -8,11 +8,6 @@ import { Eye, EyeOff, Loader2, BarChart3, ClipboardList, Building2, GraduationCa
 
 type AccountType = "researcher" | "respondent" | null;
 
-const ROLE_MAP: Record<string, string> = {
-    researcher: "USER",
-    respondent: "RESPONDENT",
-};
-
 const ROLE_INFO = {
     researcher: {
         icon: BarChart3,
@@ -63,10 +58,22 @@ export default function RegisterPage() {
         setError("");
         setLoading(true);
         try {
-            await register({
-                ...form,
-                role: ROLE_MAP[accountType],
-            });
+            // Send user_type instead of role — the backend DTO whitelists user_type, not role
+            const payload: Record<string, unknown> = { ...form };
+            if (accountType === "respondent") {
+                payload.user_type = "RESPONDENT";
+            }
+            // Researchers are default type — no need to send user_type
+            delete payload.organization;
+            delete payload.phone;
+            // Only send relevant fields
+            if (accountType === "researcher" && form.organization) {
+                payload.organization = form.organization;
+            }
+            if (accountType === "respondent" && form.phone) {
+                payload.phone = form.phone;
+            }
+            await register(payload);
             if (accountType === "respondent") {
                 router.push("/dashboard/respondent");
             } else {
@@ -154,8 +161,8 @@ export default function RegisterPage() {
                                 <button
                                     onClick={() => setAccountType("researcher")}
                                     className={`w-full text-left p-5 rounded-xl border-2 transition-all ${accountType === "researcher"
-                                            ? "border-violet-600 bg-violet-50 ring-2 ring-violet-600/20"
-                                            : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                                        ? "border-violet-600 bg-violet-50 ring-2 ring-violet-600/20"
+                                        : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
                                         }`}
                                 >
                                     <div className="flex items-start gap-4">
@@ -183,8 +190,8 @@ export default function RegisterPage() {
                                 <button
                                     onClick={() => setAccountType("respondent")}
                                     className={`w-full text-left p-5 rounded-xl border-2 transition-all ${accountType === "respondent"
-                                            ? "border-emerald-600 bg-emerald-50 ring-2 ring-emerald-600/20"
-                                            : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                                        ? "border-emerald-600 bg-emerald-50 ring-2 ring-emerald-600/20"
+                                        : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
                                         }`}
                                 >
                                     <div className="flex items-start gap-4">
@@ -335,8 +342,8 @@ export default function RegisterPage() {
                                     type="submit"
                                     disabled={loading}
                                     className={`w-full h-11 rounded-lg text-white text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2 ${accountType === "respondent"
-                                            ? "bg-emerald-600 hover:bg-emerald-700"
-                                            : "bg-violet-600 hover:bg-violet-700"
+                                        ? "bg-emerald-600 hover:bg-emerald-700"
+                                        : "bg-violet-600 hover:bg-violet-700"
                                         }`}
                                 >
                                     {loading && <Loader2 className="w-4 h-4 animate-spin" />}

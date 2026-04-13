@@ -104,6 +104,22 @@ export const subscriptions = {
     cancel: () => request("POST", "/subscriptions/cancel"),
 };
 
+// ── Admin Subscription Management ───────────────
+export const adminSubscriptions = {
+    listPlans: () => request("GET", "/admin/subscriptions/plans"),
+    createPlan: (data: Record<string, unknown>) => request("POST", "/admin/subscriptions/plans", data),
+    updatePlan: (id: string | number, data: Record<string, unknown>) => request("PUT", `/admin/subscriptions/plans/${id}`, data),
+    deletePlan: (id: string | number) => request("DELETE", `/admin/subscriptions/plans/${id}`),
+    listSubscriptions: (params?: Record<string, string>) => {
+        const qs = params ? "?" + new URLSearchParams(params).toString() : "";
+        return request("GET", `/admin/subscriptions${qs}`);
+    },
+    getSubscription: (id: string | number) => request("GET", `/admin/subscriptions/${id}`),
+    cancelSubscription: (id: string | number) => request("POST", `/admin/subscriptions/${id}/cancel`),
+    assignPlan: (userId: string | number, planId: string | number) =>
+        request("POST", "/admin/subscriptions/assign", { user_id: userId, plan_id: planId }),
+};
+
 // ── Admin ───────────────────────────────────────
 export const admin = {
     dashboard: () => request("GET", "/admin/dashboard"),
@@ -324,6 +340,7 @@ export const api = {
     analysis,
     exports: exports_,
     subscriptions,
+    adminSubscriptions,
     admin,
     adminUsers,
     apiKeys,
