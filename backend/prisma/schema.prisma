@@ -224,6 +224,7 @@ model Invoice {
   notes           String?
   createdAt       DateTime      @default(now())
   subscription    Subscription  @relation(fields: [subscriptionId], references: [id])
+  payments        Payment[]
 }
 
 enum InvoiceStatus {
@@ -232,6 +233,41 @@ enum InvoiceStatus {
   FAILED
   REFUNDED
   VOID
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  invoiceId       String
+  gateway         PaymentGateway
+  gatewayPayId    String?
+  gatewayOrderId  String?
+  amount          Float
+  currency        String        @default("INR")
+  status          PaymentStatus @default(INITIATED)
+  method          String?
+  gatewayResponse Json?
+  failureReason   String?
+  refundId        String?
+  refundedAmount  Float?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  invoice         Invoice       @relation(fields: [invoiceId], references: [id])
+}
+
+enum PaymentGateway {
+  STRIPE
+  RAZORPAY
+}
+
+enum PaymentStatus {
+  INITIATED
+  PENDING
+  AUTHORIZED
+  CAPTURED
+  PAID
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
 }
 
 model DiscountCode {

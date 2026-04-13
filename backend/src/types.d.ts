@@ -43,3 +43,30 @@ declare module 'archiver' {
     const archiver: any;
     export = archiver;
 }
+
+declare module 'razorpay' {
+    class Razorpay {
+        constructor(opts: { key_id: string; key_secret: string });
+        orders: {
+            create(params: any): Promise<any>;
+            fetch(orderId: string): Promise<any>;
+        };
+        payments: {
+            fetch(paymentId: string): Promise<any>;
+            capture(paymentId: string, amount: number, currency: string): Promise<any>;
+            refund(paymentId: string, params?: any): Promise<any>;
+        };
+        subscriptions: {
+            create(params: any): Promise<any>;
+            fetch(subId: string): Promise<any>;
+            cancel(subId: string, cancelAtCycleEnd?: boolean): Promise<any>;
+        };
+        plans: {
+            create(params: any): Promise<any>;
+        };
+        customers: {
+            create(params: any): Promise<any>;
+        };
+    }
+    export = Razorpay;
+}

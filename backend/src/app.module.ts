@@ -16,6 +16,7 @@ import { DatasetsModule } from './modules/datasets/datasets.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { AnalysisModule } from './modules/analysis/analysis.module';
 import { ExportsModule } from './modules/exports/exports.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { ExportsModule } from './modules/exports/exports.module';
     DashboardModule,
     AnalysisModule,
     ExportsModule,
+    PaymentsModule,
   ],
 })
 export class AppModule { }
