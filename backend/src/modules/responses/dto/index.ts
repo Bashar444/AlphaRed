@@ -1,4 +1,4 @@
-import { IsString, IsArray, IsOptional, ValidateNested, IsNumber } from 'class-validator';
+import { IsString, IsArray, IsOptional, ValidateNested, IsNumber, Allow } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class SubmitResponseDto {
@@ -23,5 +23,6 @@ export class AnswerItemDto {
     @IsString()
     questionId!: string;
 
+    @Allow()
     value!: unknown;
 }
