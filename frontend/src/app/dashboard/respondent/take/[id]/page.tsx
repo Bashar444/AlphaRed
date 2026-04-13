@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { api } from "@/lib/api";
+import { respondent as respondentApi } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -51,16 +51,13 @@ export default function TakeSurveyPage() {
     const [submitted, setSubmitted] = useState(false);
 
     useEffect(() => {
-        api.respondent
-            .startSurvey(surveyId)
+        respondentApi
+            .availableSurveyDetail(surveyId)
             .then((data) => {
-                const s = data?.survey || data;
-                setSurvey(s);
+                const s = (data as { survey?: Survey })?.survey || data;
+                setSurvey(s as Survey);
             })
-            .catch(() => {
-                // fallback: fetch survey directly
-                api.surveys.get(surveyId).then((s) => setSurvey(s)).catch(() => null);
-            })
+            .catch(() => null)
             .finally(() => setLoading(false));
     }, [surveyId]);
 
@@ -121,7 +118,11 @@ export default function TakeSurveyPage() {
                 questionId: q.id,
                 value: answers[q.id] ?? null,
             }));
-            await api.respondent.submitResponse(surveyId, { answers: formatted });
+            await respondentApi.submitSurveyResponse({
+                surveyId,
+                respondentId: "self",
+                answers: formatted,
+            });
             setSubmitted(true);
         } catch {
             alert("Failed to submit. Please try again.");
@@ -298,11 +299,10 @@ function QuestionInput({
                     <button
                         key={opt}
                         onClick={() => onChange(opt.toLowerCase())}
-                        className={`flex-1 py-3 rounded-lg border-2 text-sm font-medium transition-colors ${
-                            value === opt.toLowerCase()
+                        className={`flex-1 py-3 rounded-lg border-2 text-sm font-medium transition-colors ${value === opt.toLowerCase()
                                 ? "border-violet-600 bg-violet-50 text-violet-700"
                                 : "border-slate-200 text-slate-600 hover:border-slate-300"
-                        }`}
+                            }`}
                     >
                         {opt}
                     </button>
@@ -338,11 +338,10 @@ function QuestionInput({
                     <button
                         key={o.value}
                         onClick={() => onChange(o.value)}
-                        className={`w-full text-left px-4 py-3 rounded-lg border-2 text-sm transition-colors ${
-                            value === o.value
+                        className={`w-full text-left px-4 py-3 rounded-lg border-2 text-sm transition-colors ${value === o.value
                                 ? "border-violet-600 bg-violet-50 text-violet-700 font-medium"
                                 : "border-slate-200 text-slate-600 hover:border-slate-300"
-                        }`}
+                            }`}
                     >
                         {o.label}
                     </button>
@@ -369,18 +368,16 @@ function QuestionInput({
                         <button
                             key={o.value}
                             onClick={() => toggle(o.value)}
-                            className={`w-full text-left px-4 py-3 rounded-lg border-2 text-sm flex items-center gap-3 transition-colors ${
-                                checked
+                            className={`w-full text-left px-4 py-3 rounded-lg border-2 text-sm flex items-center gap-3 transition-colors ${checked
                                     ? "border-violet-600 bg-violet-50 text-violet-700"
                                     : "border-slate-200 text-slate-600 hover:border-slate-300"
-                            }`}
+                                }`}
                         >
                             <div
-                                className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${
-                                    checked
+                                className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${checked
                                         ? "border-violet-600 bg-violet-600"
                                         : "border-slate-300"
-                                }`}
+                                    }`}
                             >
                                 {checked && <CheckCircle className="w-3 h-3 text-white" />}
                             </div>
@@ -403,11 +400,10 @@ function QuestionInput({
                     <button
                         key={n}
                         onClick={() => onChange(n)}
-                        className={`w-10 h-10 rounded-lg border-2 text-sm font-medium transition-colors flex items-center justify-center ${
-                            n <= current
+                        className={`w-10 h-10 rounded-lg border-2 text-sm font-medium transition-colors flex items-center justify-center ${n <= current
                                 ? "border-violet-600 bg-violet-600 text-white"
                                 : "border-slate-200 text-slate-600 hover:border-violet-300"
-                        }`}
+                            }`}
                     >
                         {t === "RATING" ? <Star className="w-4 h-4" /> : n}
                     </button>
@@ -434,11 +430,10 @@ function QuestionInput({
                     <button
                         key={label}
                         onClick={() => onChange(i + 1)}
-                        className={`px-3 py-2 rounded-lg border-2 text-xs font-medium transition-colors ${
-                            value === i + 1
+                        className={`px-3 py-2 rounded-lg border-2 text-xs font-medium transition-colors ${value === i + 1
                                 ? "border-violet-600 bg-violet-50 text-violet-700"
                                 : "border-slate-200 text-slate-600 hover:border-slate-300"
-                        }`}
+                            }`}
                     >
                         {label}
                     </button>
@@ -469,11 +464,10 @@ function QuestionInput({
                         <button
                             key={o.value}
                             onClick={() => addToRank(o.value)}
-                            className={`w-full text-left px-4 py-3 rounded-lg border-2 text-sm flex items-center gap-3 transition-colors ${
-                                idx >= 0
+                            className={`w-full text-left px-4 py-3 rounded-lg border-2 text-sm flex items-center gap-3 transition-colors ${idx >= 0
                                     ? "border-violet-600 bg-violet-50 text-violet-700"
                                     : "border-slate-200 text-slate-600 hover:border-slate-300"
-                            }`}
+                                }`}
                         >
                             <span className="w-6 h-6 rounded-full bg-violet-600 text-white text-xs flex items-center justify-center">
                                 {idx >= 0 ? idx + 1 : "—"}
@@ -517,11 +511,10 @@ function QuestionInput({
                                     <td key={c} className="py-2 text-center">
                                         <button
                                             onClick={() => setCell(o.value, c)}
-                                            className={`w-6 h-6 rounded-full border-2 ${
-                                                current[o.value] === c
+                                            className={`w-6 h-6 rounded-full border-2 ${current[o.value] === c
                                                     ? "border-violet-600 bg-violet-600"
                                                     : "border-slate-300 hover:border-violet-400"
-                                            }`}
+                                                }`}
                                         />
                                     </td>
                                 ))}
@@ -542,11 +535,10 @@ function QuestionInput({
                     <button
                         key={o.value}
                         onClick={() => onChange(o.value)}
-                        className={`p-3 rounded-lg border-2 text-center text-sm transition-colors ${
-                            value === o.value
+                        className={`p-3 rounded-lg border-2 text-center text-sm transition-colors ${value === o.value
                                 ? "border-violet-600 bg-violet-50"
                                 : "border-slate-200 hover:border-slate-300"
-                        }`}
+                            }`}
                     >
                         {o.label}
                     </button>

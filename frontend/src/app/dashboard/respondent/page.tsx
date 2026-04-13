@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { api } from "@/lib/api";
+import { respondent as respondentApi } from "@/lib/api";
 import { StatCard } from "@/components/ui/stat-card";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import {
     ClipboardList,
@@ -28,27 +27,30 @@ interface RespondentProfile {
     status: string;
 }
 
-interface Invitation {
+interface AvailableSurvey {
     id: string;
-    survey: { id: string; title: string; estimatedMinutes: number };
-    status: string;
-    createdAt: string;
+    title: string;
+    description: string | null;
+    estimatedMinutes: number | null;
+    _count: { questions: number; responses: number };
+    user: { name: string; organization: string | null };
 }
 
 export default function RespondentDashboardPage() {
     const { user } = useAuth();
     const [profile, setProfile] = useState<RespondentProfile | null>(null);
-    const [invitations, setInvitations] = useState<Invitation[]>([]);
+    const [surveys, setSurveys] = useState<AvailableSurvey[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         Promise.all([
-            api.respondent.profile().catch(() => null),
-            api.respondent.invitations().catch(() => []),
+            respondentApi.profile().catch(() => null),
+            respondentApi.availableSurveys({ limit: "5" }).catch(() => ({ surveys: [] })),
         ])
-            .then(([p, inv]) => {
-                setProfile(p);
-                setInvitations(Array.isArray(inv) ? inv.slice(0, 5) : []);
+            .then(([p, surveyData]) => {
+                setProfile(p as RespondentProfile | null);
+                const d = surveyData as { surveys: AvailableSurvey[] };
+                setSurveys(Array.isArray(d?.surveys) ? d.surveys : []);
             })
             .finally(() => setLoading(false));
     }, []);
@@ -100,67 +102,52 @@ export default function RespondentDashboardPage() {
                 />
             </div>
 
-            {/* Recent Invitations */}
+            {/* Recent Available Surveys */}
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center justify-between">
-                        <span>Recent Survey Invitations</span>
+                        <span>Available Surveys</span>
                         <Link
                             href="/dashboard/respondent/surveys"
-                            className="text-sm font-normal text-violet-600 hover:text-violet-700"
+                            className="text-sm font-normal text-emerald-600 hover:text-emerald-700"
                         >
                             View all →
                         </Link>
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {invitations.length > 0 ? (
+                    {surveys.length > 0 ? (
                         <div className="divide-y divide-slate-100">
-                            {invitations.map((inv) => (
-                                <div key={inv.id} className="flex items-center justify-between py-3">
+                            {surveys.map((s) => (
+                                <div key={s.id} className="flex items-center justify-between py-3">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-9 h-9 rounded-lg bg-violet-50 flex items-center justify-center text-violet-600">
+                                        <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
                                             <ClipboardList className="w-4 h-4" />
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium text-slate-900">
-                                                {inv.survey?.title || "Survey"}
+                                                {s.title}
                                             </p>
                                             <p className="text-xs text-slate-500">
-                                                ~{inv.survey?.estimatedMinutes || 5} min
+                                                {s._count.questions} questions · ~{s.estimatedMinutes || 5} min
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-3">
-                                        <Badge
-                                            variant={
-                                                inv.status === "completed"
-                                                    ? "success"
-                                                    : inv.status === "pending"
-                                                        ? "warning"
-                                                        : "default"
-                                            }
-                                        >
-                                            {inv.status}
-                                        </Badge>
-                                        {inv.status === "pending" && (
-                                            <Link
-                                                href={`/dashboard/respondent/surveys?take=${inv.survey?.id}`}
-                                                className="text-xs text-violet-600 hover:underline font-medium"
-                                            >
-                                                Take Survey
-                                            </Link>
-                                        )}
-                                    </div>
+                                    <Link
+                                        href={`/dashboard/respondent/take/${s.id}`}
+                                        className="text-xs text-emerald-600 hover:underline font-medium"
+                                    >
+                                        Take Survey →
+                                    </Link>
                                 </div>
                             ))}
                         </div>
                     ) : (
                         <div className="text-center py-12">
                             <ClipboardList className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-                            <p className="text-sm text-slate-500">No survey invitations yet</p>
+                            <p className="text-sm text-slate-500">No surveys available yet</p>
                             <p className="text-xs text-slate-400 mt-1">
-                                When researchers invite you to participate, surveys will show up here
+                                When researchers launch surveys, they will appear here
                             </p>
                         </div>
                     )}
@@ -172,7 +159,7 @@ export default function RespondentDashboardPage() {
                 <Link href="/dashboard/respondent/surveys">
                     <Card className="hover:shadow-md transition-shadow cursor-pointer">
                         <CardContent className="p-5 text-center">
-                            <ClipboardList className="w-8 h-8 text-violet-600 mx-auto mb-2" />
+                            <ClipboardList className="w-8 h-8 text-emerald-600 mx-auto mb-2" />
                             <h3 className="text-sm font-semibold text-slate-900">Available Surveys</h3>
                             <p className="text-xs text-slate-500 mt-1">Browse and take surveys</p>
                         </CardContent>

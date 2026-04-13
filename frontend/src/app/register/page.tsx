@@ -58,8 +58,6 @@ export default function RegisterPage() {
         setError("");
         setLoading(true);
         try {
-            // Backend RegisterDto ONLY accepts: email, name, password, organization?, phone?
-            // No role/type field — all users register as default USER role
             const payload: Record<string, unknown> = {
                 name: form.name,
                 email: form.email,
@@ -68,8 +66,9 @@ export default function RegisterPage() {
             if (accountType === "researcher" && form.organization) {
                 payload.organization = form.organization;
             }
-            if (accountType === "respondent" && form.phone) {
-                payload.phone = form.phone;
+            if (accountType === "respondent") {
+                payload.accountType = "RESPONDENT";
+                if (form.phone) payload.phone = form.phone;
             }
             await register(payload);
             if (accountType === "respondent") {

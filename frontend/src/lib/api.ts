@@ -206,6 +206,14 @@ export const respondent = {
     earnings: () => request("GET", "/respondents/me/earnings"),
     payouts: () => request("GET", "/respondents/me/payouts"),
     requestPayout: (data: Record<string, unknown>) => request("POST", "/respondents/me/payouts", data),
+    // Browse active surveys from researchers
+    availableSurveys: (params?: Record<string, string>) => {
+        const qs = params ? "?" + new URLSearchParams(params).toString() : "";
+        return request("GET", `/surveys/available${qs}`);
+    },
+    availableSurveyDetail: (id: string) => request("GET", `/surveys/available/${id}`),
+    // Submit response to a survey
+    submitSurveyResponse: (data: Record<string, unknown>) => request("POST", "/responses/submit", data),
 };
 
 // ── RISE CRM Modules (Phase H) ──────────────────

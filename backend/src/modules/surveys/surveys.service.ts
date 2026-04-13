@@ -57,6 +57,73 @@ export class SurveysService {
         };
     }
 
+    /**
+     * List ACTIVE surveys for respondents to browse and take.
+     * Returns surveys that are currently active (launched by researchers).
+     */
+    async findActiveForRespondents(params: {
+        page?: number;
+        limit?: number;
+        search?: string;
+    }) {
+        const { page = 1, limit = 20, search } = params;
+        const skip = (page - 1) * limit;
+
+        const where: Record<string, unknown> = { status: 'ACTIVE' };
+        if (search) {
+            where.OR = [
+                { title: { contains: search, mode: 'insensitive' } },
+                { description: { contains: search, mode: 'insensitive' } },
+            ];
+        }
+
+        const [surveys, total] = await Promise.all([
+            this.prisma.survey.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy: { launchedAt: 'desc' },
+                select: {
+                    id: true,
+                    title: true,
+                    description: true,
+                    estimatedMinutes: true,
+                    status: true,
+                    launchedAt: true,
+                    endsAt: true,
+                    _count: { select: { questions: true, responses: true } },
+                    user: { select: { name: true, organization: true } },
+                },
+            }),
+            this.prisma.survey.count({ where }),
+        ]);
+
+        return {
+            surveys,
+            pagination: { total, page, limit, totalPages: Math.ceil(total / limit) },
+        };
+    }
+
+    /**
+     * Get a single ACTIVE survey by ID — for respondents to view/take.
+     */
+    async findActiveById(id: string) {
+        const survey = await this.prisma.survey.findUnique({
+            where: { id },
+            include: {
+                questions: { orderBy: { order: 'asc' } },
+                user: { select: { name: true, organization: true } },
+            },
+        });
+
+        if (!survey) throw new NotFoundException('Survey not found');
+        if (survey.status !== 'ACTIVE') {
+            throw new BadRequestException('This survey is not currently active');
+        }
+
+        return survey;
+    }
+
     async findById(id: string, userId?: string) {
         const survey = await this.prisma.survey.findUnique({
             where: { id },

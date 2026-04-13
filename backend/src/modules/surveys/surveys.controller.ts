@@ -19,6 +19,8 @@ import {
     LaunchSurveyDto,
 } from './dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('Surveys')
@@ -27,6 +29,33 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 @UseGuards(JwtAuthGuard)
 export class SurveysController {
     constructor(private readonly surveysService: SurveysService) { }
+
+    @Get('available')
+    @UseGuards(RolesGuard)
+    @Roles('RESPONDENT')
+    @ApiOperation({ summary: 'List active surveys available for respondents' })
+    @ApiQuery({ name: 'page', required: false })
+    @ApiQuery({ name: 'limit', required: false })
+    @ApiQuery({ name: 'search', required: false })
+    async findAvailable(
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+        @Query('search') search?: string,
+    ) {
+        return this.surveysService.findActiveForRespondents({
+            page: page ? parseInt(page, 10) : undefined,
+            limit: limit ? parseInt(limit, 10) : undefined,
+            search,
+        });
+    }
+
+    @Get('available/:id')
+    @UseGuards(RolesGuard)
+    @Roles('RESPONDENT')
+    @ApiOperation({ summary: 'Get survey details for respondent to take' })
+    async findAvailableById(@Param('id') id: string) {
+        return this.surveysService.findActiveById(id);
+    }
 
     @Post()
     @ApiOperation({ summary: 'Create a new survey' })

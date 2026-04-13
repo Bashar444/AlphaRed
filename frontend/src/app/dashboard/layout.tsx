@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
@@ -13,12 +13,20 @@ export default function DashboardLayout({
 }) {
     const { user, loading } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
 
     useEffect(() => {
         if (!loading && !user) {
             router.push("/login");
         }
     }, [user, loading, router]);
+
+    // Redirect respondents away from researcher/admin routes
+    useEffect(() => {
+        if (!loading && user?.role === "RESPONDENT" && !pathname.startsWith("/dashboard/respondent")) {
+            router.replace("/dashboard/respondent");
+        }
+    }, [user, loading, pathname, router]);
 
     if (loading) {
         return (
