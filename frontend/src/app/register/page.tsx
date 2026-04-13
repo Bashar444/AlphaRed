@@ -58,16 +58,13 @@ export default function RegisterPage() {
         setError("");
         setLoading(true);
         try {
-            // Send accountType — backend RegisterDto accepts USER or RESPONDENT
+            // Backend RegisterDto ONLY accepts: email, name, password, organization?, phone?
+            // No role/type field — all users register as default USER role
             const payload: Record<string, unknown> = {
                 name: form.name,
                 email: form.email,
                 password: form.password,
             };
-            if (accountType === "respondent") {
-                payload.accountType = "RESPONDENT";
-            }
-            // Only send optional fields when provided
             if (accountType === "researcher" && form.organization) {
                 payload.organization = form.organization;
             }
