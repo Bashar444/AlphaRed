@@ -14,6 +14,8 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
 import { DatasetsModule } from './modules/datasets/datasets.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { AnalysisModule } from './modules/analysis/analysis.module';
+import { ExportsModule } from './modules/exports/exports.module';
 
 @Module({
   imports: [
@@ -55,6 +57,8 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     AuditLogsModule,
     DatasetsModule,
     DashboardModule,
+    AnalysisModule,
+    ExportsModule,
   ],
 })
 export class AppModule { }
