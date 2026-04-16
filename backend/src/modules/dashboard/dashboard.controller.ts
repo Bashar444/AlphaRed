@@ -1,9 +1,10 @@
 import {
     Controller,
     Get,
+    Query,
     UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { DashboardService } from './dashboard.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -31,6 +32,15 @@ export class DashboardController {
     @ApiOperation({ summary: 'Recent platform activity (admin)' })
     async recentActivity() {
         return this.dashboardService.getRecentActivity();
+    }
+
+    @Get('admin/charts')
+    @UseGuards(RolesGuard)
+    @Roles('SUPERADMIN', 'MANAGER')
+    @ApiOperation({ summary: 'Admin dashboard chart data' })
+    @ApiQuery({ name: 'type', required: true, enum: ['responses_timeline', 'revenue_trend', 'quality_distribution', 'task_status', 'survey_status'] })
+    async adminCharts(@Query('type') type: string) {
+        return this.dashboardService.getChartData(type);
     }
 
     @Get('me')

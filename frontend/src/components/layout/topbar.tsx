@@ -1,17 +1,37 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { Bell, Search, Shield, BarChart3, ClipboardList } from "lucide-react";
+import { Bell, Search, Shield, BarChart3, ClipboardList, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const portalLinks = [
+    { href: "/dashboard/admin", label: "Admin Portal", icon: Shield, color: "text-amber-600 bg-amber-50" },
+    { href: "/dashboard", label: "Researcher Portal", icon: BarChart3, color: "text-violet-600 bg-violet-50" },
+    { href: "/dashboard/respondent", label: "Respondent Portal", icon: ClipboardList, color: "text-emerald-600 bg-emerald-50" },
+];
 
 export function Topbar({ title }: { title?: string }) {
     const { user } = useAuth();
+    const [portalOpen, setPortalOpen] = useState(false);
+    const portalRef = useRef<HTMLDivElement>(null);
 
     const isAdmin = user?.role === "SUPERADMIN" || user?.role === "MANAGER" || user?.is_admin;
     const isRespondent = user?.role === "RESPONDENT";
 
     const roleLabel = isAdmin ? "Admin" : isRespondent ? "Respondent" : "Researcher";
     const RoleIcon = isAdmin ? Shield : isRespondent ? ClipboardList : BarChart3;
+
+    useEffect(() => {
+        function handleClick(e: MouseEvent) {
+            if (portalRef.current && !portalRef.current.contains(e.target as Node)) {
+                setPortalOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClick);
+        return () => document.removeEventListener("mousedown", handleClick);
+    }, []);
 
     return (
         <header className="sticky top-0 z-30 flex items-center justify-between h-14 px-6 bg-white border-b border-slate-200">
@@ -28,6 +48,37 @@ export function Topbar({ title }: { title?: string }) {
             </div>
 
             <div className="flex items-center gap-3">
+                {/* Portal Switcher (Admin only) */}
+                {isAdmin && (
+                    <div className="relative" ref={portalRef}>
+                        <button
+                            onClick={() => setPortalOpen(!portalOpen)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-50 rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors"
+                        >
+                            <Layers className="w-3.5 h-3.5" />
+                            Switch Portal
+                        </button>
+                        {portalOpen && (
+                            <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl border border-slate-200 shadow-lg py-2 z-50">
+                                <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">Portals</p>
+                                {portalLinks.map((p) => (
+                                    <Link
+                                        key={p.href}
+                                        href={p.href}
+                                        onClick={() => setPortalOpen(false)}
+                                        className="flex items-center gap-3 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                                    >
+                                        <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center", p.color)}>
+                                            <p.icon className="w-3.5 h-3.5" />
+                                        </div>
+                                        {p.label}
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* Search */}
                 <div className="relative hidden md:block">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />

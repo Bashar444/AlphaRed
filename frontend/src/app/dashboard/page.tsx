@@ -96,16 +96,28 @@ export default function DashboardPage() {
 
     async function loadAdminData() {
         try {
-            const [stats, timeline, revenue, quality, tasks, activity] = await Promise.all([
+            const [statsData, timeline, revenue, quality, tasks, activityData] = await Promise.all([
                 api.admin.stats().catch(() => null),
                 api.admin.charts("responses_timeline").catch(() => []),
                 api.admin.charts("revenue_trend").catch(() => []),
                 api.admin.charts("quality_distribution").catch(() => []),
                 api.admin.charts("task_status").catch(() => []),
-                api.admin.activity().catch(() => []),
+                api.admin.activity().catch(() => null),
             ]);
 
-            if (stats) setAdminStats(stats);
+            if (statsData) {
+                setAdminStats({
+                    team_members: statsData.users?.total || 0,
+                    clients: 0,
+                    projects: 0,
+                    tasks: 0,
+                    open_tickets: 0,
+                    invoice_total: statsData.revenue?.total || 0,
+                    invoice_due: 0,
+                    expense_total: 0,
+                    active_subscriptions: statsData.subscriptions?.active || 0,
+                });
+            }
             setResponsesTimeline(timeline || []);
             setRevenueTrend(revenue || []);
             if (quality && Array.isArray(quality)) {
@@ -115,7 +127,23 @@ export default function DashboardPage() {
                 });
             }
             setTaskStatus(tasks || []);
-            setActivityFeed(activity || []);
+
+            // Flatten activity from grouped format
+            if (activityData) {
+                const items: ActivityItem[] = [];
+                let idx = 0;
+                for (const u of (activityData.recentUsers || [])) {
+                    items.push({ id: idx++, type: 'user_registered', description: `${u.name} registered as ${u.role}`, user_name: u.name, created_at: u.createdAt });
+                }
+                for (const l of (activityData.recentLeads || [])) {
+                    items.push({ id: idx++, type: 'lead_created', description: `New lead: ${l.name}`, user_name: l.name, created_at: l.createdAt });
+                }
+                for (const s of (activityData.recentSurveys || [])) {
+                    items.push({ id: idx++, type: 'survey_created', description: `Survey "${s.title}" — ${s.status}`, user_name: '', created_at: s.createdAt });
+                }
+                items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                setActivityFeed(items.slice(0, 15));
+            }
         } catch {
             // admin data optional
         } finally {
@@ -143,7 +171,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Primary Stat Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-6">
                 <StatCard
                     title="Total Surveys"
                     value={data?.total_surveys ?? 0}
@@ -173,7 +201,7 @@ export default function DashboardPage() {
 
             {/* Admin Extended Stats */}
             {isAdmin && adminStats && (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 xl:gap-6">
                     <StatCard
                         title="Revenue"
                         value={`₹${(adminStats.invoice_total || 0).toLocaleString()}`}
@@ -209,7 +237,7 @@ export default function DashboardPage() {
 
             {/* Charts — Admin Only */}
             {isAdmin && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 xl:gap-6">
                     <LineChartWidget
                         title="Responses Over Time (30 days)"
                         data={responsesTimeline}
@@ -243,7 +271,7 @@ export default function DashboardPage() {
             )}
 
             {/* Bottom Row: Recent Surveys + Activity Feed */}
-            <div className={`grid grid-cols-1 ${isAdmin ? "lg:grid-cols-2" : ""} gap-6`}>
+            <div className={`grid grid-cols-1 ${isAdmin ? "lg:grid-cols-2" : ""} gap-4 xl:gap-6`}>
                 {/* Recent Surveys */}
                 <Card>
                     <CardHeader>

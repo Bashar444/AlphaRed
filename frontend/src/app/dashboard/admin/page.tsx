@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -15,6 +16,8 @@ import {
     Eye,
     EyeOff,
     Ban,
+    ArrowRight,
+    ClipboardList,
 } from "lucide-react";
 
 interface AdminDashboard {
@@ -61,7 +64,13 @@ export default function AdminPage() {
     async function loadDashboard() {
         try {
             const data = await api.admin.dashboard();
-            setDashboard(data);
+            setDashboard({
+                totalRevenue: data?.revenue?.total || 0,
+                activeSubscriptions: data?.subscriptions?.active || 0,
+                totalRespondents: data?.users?.total || 0,
+                totalSurveys: data?.surveys?.total || 0,
+                totalResponses: data?.responses?.total || 0,
+            });
         } catch {
             // non-admin or API error
         } finally {
@@ -168,9 +177,49 @@ export default function AdminPage() {
                 ))}
             </div>
 
+            {/* Portal Quick Links */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Link href="/dashboard" className="group flex items-center justify-between p-4 rounded-xl border border-slate-200 bg-white hover:border-violet-300 hover:shadow-md transition-all">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-violet-50 flex items-center justify-center text-violet-600">
+                            <BarChart3 className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-semibold text-slate-900">Researcher Portal</p>
+                            <p className="text-xs text-slate-500">Surveys, Analysis, Exports</p>
+                        </div>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-violet-600 transition-colors" />
+                </Link>
+                <Link href="/dashboard/respondent" className="group flex items-center justify-between p-4 rounded-xl border border-slate-200 bg-white hover:border-emerald-300 hover:shadow-md transition-all">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+                            <ClipboardList className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-semibold text-slate-900">Respondent Portal</p>
+                            <p className="text-xs text-slate-500">Surveys, Earnings, Payouts</p>
+                        </div>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 transition-colors" />
+                </Link>
+                <Link href="/dashboard/admin/users" className="group flex items-center justify-between p-4 rounded-xl border border-slate-200 bg-white hover:border-amber-300 hover:shadow-md transition-all">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
+                            <Users className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-semibold text-slate-900">Users & Clients</p>
+                            <p className="text-xs text-slate-500">Manage all user accounts</p>
+                        </div>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-amber-600 transition-colors" />
+                </Link>
+            </div>
+
             {/* Overview */}
             {tab === "overview" && dashboard && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 xl:gap-6">
                     <StatCard
                         title="Revenue"
                         value={`₹${(dashboard.totalRevenue || 0).toLocaleString()}`}

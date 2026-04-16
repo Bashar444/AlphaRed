@@ -14,14 +14,14 @@ export function StatCard({ title, value, subtitle, icon, trend, className }: Sta
     return (
         <div
             className={cn(
-                "rounded-xl border border-slate-200 bg-white p-6 shadow-sm",
+                "rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md",
                 className
             )}
         >
             <div className="flex items-start justify-between">
-                <div className="space-y-2">
-                    <p className="text-sm font-medium text-slate-500">{title}</p>
-                    <p className="text-3xl font-bold text-slate-900">{value}</p>
+                <div className="space-y-1.5">
+                    <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">{title}</p>
+                    <p className="text-2xl font-bold text-slate-900 tracking-tight">{value}</p>
                     {subtitle && <p className="text-xs text-slate-400">{subtitle}</p>}
                     {trend && (
                         <p
