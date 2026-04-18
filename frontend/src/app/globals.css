@@ -24,4 +24,14 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+
+  /* Hide scrollbar for horizontally-scrollable carousels (mobile pricing, etc.) */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }

@@ -47,8 +47,8 @@ const researcherNav = [
     { href: "/dashboard/surveys", label: "My Surveys", icon: ClipboardList },
     { href: "/dashboard/analysis", label: "Analysis", icon: BarChart3 },
     { href: "/dashboard/exports", label: "Exports", icon: Download },
-    { href: "/dashboard/api-keys", label: "API Keys", icon: Key },
     { href: "/dashboard/subscription", label: "Subscription", icon: CreditCard },
+    { href: "/dashboard/profile", label: "Profile", icon: User },
 ];
 
 const respondentNav = [
@@ -106,7 +106,12 @@ const adminSurveyOpsNav = [
 const adminSettingsNav = [
     { href: "/dashboard/admin/cms", label: "CMS Pages", icon: Globe },
     { href: "/dashboard/admin/subscriptions", label: "Subscriptions", icon: CreditCard },
-    { href: "/dashboard/api-keys", label: "API Keys", icon: Key },
+    { href: "/dashboard/admin/email-config", label: "Email Config", icon: MessageSquare },
+    { href: "/dashboard/admin/seo-config", label: "SEO Config", icon: Globe },
+    { href: "/dashboard/admin/payment-config", label: "Payment Gateways", icon: CreditCard },
+    { href: "/dashboard/admin/system-settings", label: "System Settings", icon: Activity },
+    { href: "/dashboard/admin/api-requests", label: "API Access Requests", icon: Key },
+    { href: "/dashboard/profile", label: "My Profile", icon: User },
 ];
 
 /* ── Theme definitions ──────────────────────────────────── */
@@ -230,7 +235,7 @@ function NavSection({
 
 /* ── Main Sidebar ───────────────────────────────────────── */
 
-export function Sidebar() {
+export function Sidebar({ mobileOpen = false, onClose }: { mobileOpen?: boolean; onClose?: () => void } = {}) {
     const pathname = usePathname();
     const { user, logout } = useAuth();
 
@@ -245,69 +250,93 @@ export function Sidebar() {
     const roleLabel = isAdmin ? "Admin" : isRespondent ? "Respondent" : "Researcher";
 
     return (
-        <aside className={cn("fixed inset-y-0 left-0 z-40 flex flex-col w-64 min-h-screen border-r", theme.bg, theme.border)}>
-            {/* Logo */}
-            <div className={cn("flex items-center gap-3 px-5 py-4 border-b", theme.border)}>
-                <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center font-bold text-white text-sm shadow-lg", theme.logoBg)}>
-                    P
-                </div>
-                <div className="flex-1 min-w-0">
-                    <span className={cn("text-base font-bold tracking-tight", theme.logo)}>PrimoData</span>
-                    <span className={cn("block text-[10px] font-medium uppercase tracking-wider", theme.roleBadge)}>
-                        {roleLabel} Portal
-                    </span>
-                </div>
-            </div>
-
-            {/* Navigation */}
-            <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
-                {isAdmin ? (
-                    /* ── Admin Sidebar ── */
-                    <>
-                        <NavSection label="Platform" items={adminPlatformNav} pathname={pathname} theme={theme} />
-                        <NavSection label="Survey Operations" items={adminSurveyOpsNav} pathname={pathname} theme={theme} />
-                        <NavSection label="Business" items={businessNav} pathname={pathname} theme={theme} />
-                        <NavSection label="Team" items={teamNav} pathname={pathname} theme={theme} />
-                        <NavSection label="Tools" items={toolsNav} pathname={pathname} theme={theme} />
-                        <NavSection label="Settings" items={adminSettingsNav} pathname={pathname} theme={theme} />
-                    </>
-                ) : isRespondent ? (
-                    /* ── Respondent Sidebar ── */
-                    <>
-                        <NavSection label="My Panel" items={respondentNav} pathname={pathname} theme={theme} />
-                    </>
-                ) : (
-                    /* ── Researcher Sidebar ── */
-                    <>
-                        <NavSection label="Research" items={researcherNav} pathname={pathname} theme={theme} />
-                        {isStaff && <NavSection label="Business" items={businessNav} pathname={pathname} theme={theme} />}
-                        {isStaff && <NavSection label="Team" items={teamNav} pathname={pathname} theme={theme} />}
-                        <NavSection label="Tools" items={toolsNav} pathname={pathname} theme={theme} />
-                    </>
+        <>
+            {/* Mobile backdrop */}
+            {mobileOpen && (
+                <div
+                    onClick={onClose}
+                    className="fixed inset-0 z-30 bg-slate-900/50 backdrop-blur-sm lg:hidden"
+                    aria-hidden
+                />
+            )}
+            <aside
+                className={cn(
+                    "fixed inset-y-0 left-0 z-40 flex flex-col w-64 min-h-screen border-r transform transition-transform duration-300",
+                    theme.bg,
+                    theme.border,
+                    mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
                 )}
-            </nav>
-
-            {/* User footer */}
-            <div className={cn("border-t px-4 py-3", theme.border)}>
-                <div className="flex items-center gap-3">
-                    <div className={cn("w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold", theme.userBg, theme.userText)}>
-                        {user?.name?.[0]?.toUpperCase()}
+            >
+                {/* Logo */}
+                <div className={cn("flex items-center gap-3 px-5 py-4 border-b", theme.border)}>
+                    <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center font-bold text-white text-sm shadow-lg", theme.logoBg)}>
+                        P
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className={cn("text-sm font-medium truncate", theme.userText)}>
-                            {user?.name}
-                        </p>
-                        <p className={cn("text-xs truncate", theme.userSubtext)}>{user?.email}</p>
+                        <span className={cn("text-base font-bold tracking-tight", theme.logo)}>PrimoData</span>
+                        <span className={cn("block text-[10px] font-medium uppercase tracking-wider", theme.roleBadge)}>
+                            {roleLabel} Portal
+                        </span>
                     </div>
-                    <button
-                        onClick={logout}
-                        className={cn("text-slate-500 transition-colors", theme.logoutHover)}
-                        title="Logout"
-                    >
-                        <LogOut className="w-4 h-4" />
-                    </button>
                 </div>
-            </div>
-        </aside>
+
+                {/* Navigation */}
+                <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
+                    {isAdmin ? (
+                        /* ── Admin Sidebar ── */
+                        <>
+                            <NavSection label="Platform" items={adminPlatformNav} pathname={pathname} theme={theme} />
+                            <NavSection label="Survey Operations" items={adminSurveyOpsNav} pathname={pathname} theme={theme} />
+                            <NavSection label="Business" items={businessNav} pathname={pathname} theme={theme} />
+                            <NavSection label="Team" items={teamNav} pathname={pathname} theme={theme} />
+                            <NavSection label="Tools" items={toolsNav} pathname={pathname} theme={theme} />
+                            <NavSection label="Settings" items={adminSettingsNav} pathname={pathname} theme={theme} />
+                        </>
+                    ) : isRespondent ? (
+                        /* ── Respondent Sidebar ── */
+                        <>
+                            <NavSection label="My Panel" items={respondentNav} pathname={pathname} theme={theme} />
+                        </>
+                    ) : (
+                        /* ── Researcher Sidebar ── */
+                        <>
+                            <NavSection label="Research" items={researcherNav} pathname={pathname} theme={theme} />
+                            {isStaff && <NavSection label="Business" items={businessNav} pathname={pathname} theme={theme} />}
+                            {isStaff && <NavSection label="Team" items={teamNav} pathname={pathname} theme={theme} />}
+                            <NavSection label="Tools" items={toolsNav} pathname={pathname} theme={theme} />
+                        </>
+                    )}
+                </nav>
+
+                {/* User footer */}
+                <div className={cn("border-t px-4 py-3", theme.border)}>
+                    <div className="flex items-center gap-3">
+                        <div className={cn("w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold", theme.userBg, theme.userText)}>
+                            {user?.name?.[0]?.toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className={cn("text-sm font-medium truncate", theme.userText)}>
+                                {user?.name}
+                            </p>
+                            <p className={cn("text-xs truncate", theme.userSubtext)}>{user?.email}</p>
+                        </div>
+                        <Link
+                            href={isRespondent ? "/dashboard/respondent/profile" : "/dashboard/profile"}
+                            className={cn("text-slate-500 transition-colors hover:text-violet-600", theme.itemHover)}
+                            title="Profile Settings"
+                        >
+                            <User className="w-4 h-4" />
+                        </Link>
+                        <button
+                            onClick={logout}
+                            className={cn("text-slate-500 transition-colors", theme.logoutHover)}
+                            title="Logout"
+                        >
+                            <LogOut className="w-4 h-4" />
+                        </button>
+                    </div>
+                </div>
+            </aside>
+        </>
     );
 }
