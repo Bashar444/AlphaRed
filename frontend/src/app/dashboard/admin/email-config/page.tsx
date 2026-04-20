@@ -1,15 +1,55 @@
 "use client";
 
+import { useState } from "react";
 import SettingsForm from "@/components/admin/settings-form";
-import { Mail } from "lucide-react";
+import { api } from "@/lib/api";
+import { Mail, Send, Loader2 } from "lucide-react";
+
+function TestEmailButton() {
+    const [busy, setBusy] = useState(false);
+    const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
+
+    async function send() {
+        setBusy(true);
+        setResult(null);
+        try {
+            const res = await api.adminSettings.sendTestEmail();
+            setResult({ ok: !!res.ok, text: res.message });
+        } catch (err) {
+            setResult({ ok: false, text: err instanceof Error ? err.message : "Test send failed" });
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    return (
+        <div className="flex items-center gap-3">
+            {result && (
+                <span className={`text-xs ${result.ok ? "text-emerald-600" : "text-red-600"}`}>
+                    {result.text}
+                </span>
+            )}
+            <button
+                type="button"
+                onClick={send}
+                disabled={busy}
+                className="inline-flex items-center gap-2 h-11 px-4 rounded-lg border border-violet-300 text-violet-700 hover:bg-violet-50 disabled:opacity-50 text-sm font-medium transition"
+            >
+                {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                {busy ? "Sending…" : "Send test email"}
+            </button>
+        </div>
+    );
+}
 
 export default function EmailConfigPage() {
     return (
         <SettingsForm
             group="email"
             title="Email Configuration"
-            description="SMTP credentials used by transactional emails (verification, password reset, notifications)."
+            description="SMTP credentials used by transactional emails (verification, password reset, notifications). Save changes first, then send a test email to verify."
             icon={<Mail className="w-6 h-6" />}
+            extraActions={<TestEmailButton />}
             sections={[
                 {
                     title: "SMTP Server",

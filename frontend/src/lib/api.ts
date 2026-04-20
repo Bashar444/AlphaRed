@@ -173,6 +173,8 @@ export const adminSettings = {
         return Promise.all(ops);
     },
     remove: (key: string) => request("DELETE", `/admin/settings/${encodeURIComponent(key)}`),
+    sendTestEmail: () =>
+        request<{ ok: boolean; sentTo?: string; message: string }>("POST", "/admin/email/test"),
 };
 
 // ── API Access Requests ───────────────────────────────────────

@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { MailerService } from '../mailer/mailer.service';
 import {
     UpsertSettingDto, UpdateModuleDto,
     CreatePageDto, UpdatePageDto,
@@ -9,7 +10,7 @@ import {
 
 @Injectable()
 export class AdminService {
-    constructor(private prisma: PrismaService) { }
+    constructor(private prisma: PrismaService, private mailer: MailerService) { }
 
     // ═══════════════════════════════════════════
     // APP SETTINGS
@@ -28,11 +29,16 @@ export class AdminService {
     }
 
     async upsertSetting(dto: UpsertSettingDto) {
-        return this.prisma.appSetting.upsert({
+        const result = await this.prisma.appSetting.upsert({
             where: { key: dto.key },
             create: { key: dto.key, value: dto.value, group: dto.group, label: dto.label },
             update: { value: dto.value, group: dto.group, label: dto.label },
         });
+        // If an email setting changed, drop the cached SMTP transporter
+        if (dto.group === 'email' || dto.key.startsWith('smtp_')) {
+            this.mailer.invalidateCache();
+        }
+        return result;
     }
 
     async deleteSetting(key: string) {

@@ -21,6 +21,7 @@ import { RespondentsModule } from './modules/respondents/respondents.module';
 import { InvitationsModule } from './modules/invitations/invitations.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { ApiAccessRequestsModule } from './modules/api-access-requests/api-access-requests.module';
+import { MailerModule } from './modules/mailer/mailer.module';
 
 @Module({
   imports: [
@@ -69,6 +70,7 @@ import { ApiAccessRequestsModule } from './modules/api-access-requests/api-acces
     InvitationsModule,
     AdminModule,
     ApiAccessRequestsModule,
+    MailerModule,
   ],
 })
 export class AppModule { }

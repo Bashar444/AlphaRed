@@ -3,6 +3,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
+import { MailerService } from '../mailer/mailer.service';
 import {
     UpsertSettingDto, UpdateModuleDto,
     CreatePageDto, UpdatePageDto,
@@ -20,7 +21,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 @Roles('SUPERADMIN')
 @ApiBearerAuth()
 export class AdminController {
-    constructor(private readonly service: AdminService) { }
+    constructor(private readonly service: AdminService, private readonly mailer: MailerService) { }
 
     // ── Settings ──
 
@@ -47,6 +48,12 @@ export class AdminController {
     @ApiOperation({ summary: 'Delete a setting' })
     async deleteSetting(@Param('key') key: string) {
         return this.service.deleteSetting(key);
+    }
+
+    @Post('email/test')
+    @ApiOperation({ summary: 'Send a test email using current SMTP settings' })
+    async sendTestEmail() {
+        return this.mailer.sendTest();
     }
 
     // ── Module Toggles ──

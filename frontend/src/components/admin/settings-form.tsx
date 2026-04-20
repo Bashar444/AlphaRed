@@ -29,11 +29,12 @@ interface Props {
     title: string;
     description?: string;
     icon?: React.ReactNode;
+    extraActions?: React.ReactNode;
 }
 
 type Values = Record<string, string | number | boolean>;
 
-export default function SettingsForm({ group, sections, title, description, icon }: Props) {
+export default function SettingsForm({ group, sections, title, description, icon, extraActions }: Props) {
     const [values, setValues] = useState<Values>({});
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -147,7 +148,8 @@ export default function SettingsForm({ group, sections, title, description, icon
                     </Card>
                 ))}
 
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-2">
+                    {extraActions}
                     <button
                         type="submit"
                         disabled={saving}

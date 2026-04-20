@@ -10,6 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../../prisma/prisma.service';
+import { MailerService } from '../mailer/mailer.service';
 import {
     RegisterDto,
     LoginDto,
@@ -23,6 +24,7 @@ export class AuthService {
         private prisma: PrismaService,
         private jwtService: JwtService,
         private configService: ConfigService,
+        private mailer: MailerService,
     ) { }
 
     async register(dto: RegisterDto) {
@@ -235,10 +237,12 @@ export class AuthService {
             },
         });
 
-        // TODO: Send email via Resend with reset link
-        // For now, log token in development
-        if (this.configService.get('NODE_ENV') === 'development') {
-            console.log(`Password reset token for ${email}: ${token}`);
+        // Send via configured SMTP (falls back to log in non-prod if SMTP missing)
+        try {
+            await this.mailer.sendPasswordResetEmail(user.email, token);
+        } catch (err) {
+            // Never leak SMTP failures to the caller (preserves enumeration protection)
+            console.error('[auth] password reset email failed:', err instanceof Error ? err.message : err);
         }
 
         return { message: 'If the email exists, a reset link has been sent' };
@@ -286,12 +290,12 @@ export class AuthService {
             data: { identifier: normalized, token, expires },
         });
 
-        if (this.configService.get('NODE_ENV') !== 'production') {
-            // eslint-disable-next-line no-console
-            console.log(`[verify-email] ${normalized} → token: ${token}`);
+        try {
+            await this.mailer.sendVerificationEmail(normalized, token);
+        } catch (err) {
+            console.error('[auth] verification email failed:', err instanceof Error ? err.message : err);
         }
 
-        // TODO: integrate SMTP/Resend
         return { message: 'Verification email sent' };
     }
 
