@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class PublicService {
@@ -104,5 +105,152 @@ export class PublicService {
             lines.push(`Sitemap: ${cfg.seo.canonicalUrl.replace(/\/$/, '')}/sitemap.xml`);
         }
         return lines.join('\n');
+    }
+
+    /** Public-take: fetch an active anonymous-allowed survey with its questions. */
+    async getPublicSurvey(id: string) {
+        const survey = await this.prisma.survey.findUnique({
+            where: { id },
+            include: {
+                questions: {
+                    orderBy: { order: 'asc' },
+                    select: {
+                        id: true,
+                        order: true,
+                        type: true,
+                        text: true,
+                        description: true,
+                        required: true,
+                        options: true,
+                        validation: true,
+                        mediaUrl: true,
+                    },
+                },
+            },
+        });
+        if (!survey) throw new NotFoundException('Survey not found');
+        if (survey.status !== 'ACTIVE') {
+            throw new BadRequestException('Survey is not currently accepting responses');
+        }
+        if (!survey.allowAnonymous) {
+            throw new ForbiddenException('This survey requires sign-in to participate');
+        }
+        if (survey.endsAt && survey.endsAt < new Date()) {
+            throw new BadRequestException('Survey has ended');
+        }
+        if (survey.startsAt && survey.startsAt > new Date()) {
+            throw new BadRequestException('Survey has not started yet');
+        }
+
+        return {
+            id: survey.id,
+            title: survey.title,
+            description: survey.description,
+            welcomeMessage: survey.welcomeMessage,
+            thankYouMessage: survey.thankYouMessage,
+            estimatedMinutes: survey.estimatedMinutes,
+            language: survey.language,
+            progressBar: survey.progressBar,
+            randomizeQuestions: survey.randomizeQuestions,
+            questions: survey.questions,
+        };
+    }
+
+    /** Public-take: submit anonymous response. */
+    async submitPublicResponse(
+        surveyId: string,
+        body: { answers: Array<{ questionId: string; value: unknown }>; durationSecs?: number; email?: string; name?: string },
+        ip: string,
+        userAgent: string,
+    ) {
+        const survey = await this.prisma.survey.findUnique({
+            where: { id: surveyId },
+            include: { questions: { select: { id: true, required: true } } },
+        });
+        if (!survey) throw new NotFoundException('Survey not found');
+        if (survey.status !== 'ACTIVE') {
+            throw new BadRequestException('Survey is not accepting responses');
+        }
+        if (!survey.allowAnonymous) {
+            throw new ForbiddenException('This survey requires sign-in');
+        }
+        if (!Array.isArray(body.answers) || body.answers.length === 0) {
+            throw new BadRequestException('No answers submitted');
+        }
+
+        const validIds = new Set(survey.questions.map((q) => q.id));
+        const answeredIds = new Set(body.answers.map((a) => a.questionId));
+        const missingRequired = survey.questions.find((q) => q.required && !answeredIds.has(q.id));
+        if (missingRequired) {
+            throw new BadRequestException(`Required question not answered: ${missingRequired.id}`);
+        }
+
+        const ipHash = ip ? crypto.createHash('sha256').update(ip).digest('hex').slice(0, 32) : undefined;
+
+        // Throttle: same ipHash submitted in last hour for this survey
+        if (ipHash) {
+            const recent = await this.prisma.response.findFirst({
+                where: {
+                    surveyId,
+                    ipHash,
+                    createdAt: { gte: new Date(Date.now() - 60 * 60 * 1000) },
+                },
+            });
+            if (recent) {
+                throw new BadRequestException('You have already submitted a response recently');
+            }
+        }
+
+        // Anonymous respondent: identify by ipHash-based pseudo-email
+        const pseudoEmail = body.email && body.email.trim().length > 0
+            ? body.email.trim().toLowerCase()
+            : `anon-${ipHash || crypto.randomBytes(8).toString('hex')}@anonymous.primodata.local`;
+
+        let respondent = await this.prisma.respondent.findFirst({ where: { email: pseudoEmail } });
+        if (!respondent) {
+            respondent = await this.prisma.respondent.create({
+                data: {
+                    email: pseudoEmail,
+                    name: body.name?.trim() || pseudoEmail.split('@')[0],
+                    status: 'ACTIVE',
+                    kycStatus: 'PENDING',
+                    demographics: {},
+                },
+            });
+        }
+
+        const response = await this.prisma.$transaction(async (tx) => {
+            const resp = await tx.response.create({
+                data: {
+                    surveyId,
+                    respondentId: respondent.id,
+                    status: 'COMPLETED',
+                    durationSecs: body.durationSecs,
+                    ipHash,
+                    userAgent: userAgent?.slice(0, 500),
+                    completedAt: new Date(),
+                    answers: {
+                        create: body.answers
+                            .filter((a) => validIds.has(a.questionId))
+                            .map((a) => ({ questionId: a.questionId, value: a.value as any })),
+                    },
+                },
+            });
+            await tx.survey.update({
+                where: { id: surveyId },
+                data: { collectedCount: { increment: 1 }, validCount: { increment: 1 } },
+            });
+            await tx.respondent.update({
+                where: { id: respondent.id },
+                data: {
+                    totalResponses: { increment: 1 },
+                    acceptedCount: { increment: 1 },
+                    lastActiveAt: new Date(),
+                },
+            });
+            return resp;
+        });
+
+        return { responseId: response.id, status: 'COMPLETED', thankYouMessage: survey.thankYouMessage };
     }
 }

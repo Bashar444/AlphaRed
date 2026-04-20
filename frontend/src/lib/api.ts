@@ -281,6 +281,38 @@ export const publicCms = {
     ),
 };
 
+// ── Public Surveys (anonymous) ──────────────────
+export interface PublicSurveyQuestion {
+    id: string;
+    order: number;
+    type: string;
+    text: string;
+    description?: string | null;
+    required: boolean;
+    options?: unknown;
+    validation?: unknown;
+    mediaUrl?: string | null;
+}
+export interface PublicSurvey {
+    id: string;
+    title: string;
+    description?: string | null;
+    welcomeMessage?: string | null;
+    thankYouMessage?: string | null;
+    estimatedMinutes: number;
+    language: string;
+    progressBar: boolean;
+    randomizeQuestions: boolean;
+    questions: PublicSurveyQuestion[];
+}
+export const publicSurveys = {
+    get: (id: string) => request<PublicSurvey>("GET", `/public/surveys/${encodeURIComponent(id)}`),
+    submit: (id: string, body: { answers: Array<{ questionId: string; value: unknown }>; durationSecs?: number; email?: string; name?: string }) =>
+        request<{ responseId: string; status: string; thankYouMessage?: string | null }>(
+            "POST", `/public/surveys/${encodeURIComponent(id)}/responses`, body,
+        ),
+};
+
 // ── Audit logs ──────────────────────────────────
 export const auditLogs = {
     list: (params?: { userId?: string; entity?: string; action?: string; from?: string; to?: string }) => {
@@ -476,6 +508,7 @@ export const api = {
     apiKeys,
     adminCms,
     publicCms,
+    publicSurveys,
     auditLogs,
     payments,
     notifications,
