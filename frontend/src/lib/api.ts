@@ -267,6 +267,15 @@ export const adminCms = {
     // Media library
     media: (page = 1, limit = 20) => request("GET", `/admin/media?page=${page}&limit=${limit}`),
     deleteMedia: (id: string) => request("DELETE", `/admin/media/${id}`),
+
+    // Email templates
+    emailTemplates: () => request<Array<{ id: string; name: string; subject: string; body: string; variables?: unknown; isSystem: boolean; updatedAt: string }>>("GET", "/admin/email-templates"),
+    getEmailTemplate: (name: string) => request<{ id: string; name: string; subject: string; body: string; variables?: unknown; isSystem: boolean }>("GET", `/admin/email-templates/${encodeURIComponent(name)}`),
+    createEmailTemplate: (data: { name: string; subject: string; body: string; variables?: unknown }) =>
+        request("POST", "/admin/email-templates", data),
+    updateEmailTemplate: (id: string, data: { subject?: string; body?: string; variables?: unknown }) =>
+        request("PUT", `/admin/email-templates/${id}`, data),
+    deleteEmailTemplate: (id: string) => request("DELETE", `/admin/email-templates/${id}`),
 };
 
 // ── Public CMS (no auth) ────────────────────────

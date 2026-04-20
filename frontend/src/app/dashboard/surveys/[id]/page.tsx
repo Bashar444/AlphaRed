@@ -154,9 +154,9 @@ export default function SurveyBuilderPage() {
     }
 
     function copyRespondentLink() {
-        const link = `${window.location.origin}/survey/${surveyId}/respond`;
+        const link = `${window.location.origin}/s/${surveyId}`;
         navigator.clipboard.writeText(link);
-        alert("Respondent link copied to clipboard!");
+        alert("Public survey link copied to clipboard!\n\n" + link);
     }
 
     function addQuestion() {

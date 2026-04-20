@@ -111,6 +111,7 @@ const adminSettingsNav = [
     { href: "/dashboard/admin/audit-log", label: "Audit Log", icon: ScrollText },
     { href: "/dashboard/admin/subscriptions", label: "Subscriptions", icon: CreditCard },
     { href: "/dashboard/admin/email-config", label: "Email Config", icon: MessageSquare },
+    { href: "/dashboard/admin/email-templates", label: "Email Templates", icon: MessageSquare },
     { href: "/dashboard/admin/seo-config", label: "SEO Config", icon: Globe },
     { href: "/dashboard/admin/payment-config", label: "Payment Gateways", icon: CreditCard },
     { href: "/dashboard/admin/system-settings", label: "System Settings", icon: Activity },
