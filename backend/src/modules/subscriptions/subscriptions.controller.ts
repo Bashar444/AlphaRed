@@ -27,6 +27,12 @@ export class SubscriptionsController {
         return this.subscriptionsService.getUserSubscription(userId);
     }
 
+    @Get('me/usage')
+    @ApiOperation({ summary: 'Get my plan usage vs limits (surveys, responses, questions)' })
+    async myUsage(@CurrentUser('id') userId: string) {
+        return this.subscriptionsService.getUsage(userId);
+    }
+
     @Post('subscribe')
     @ApiOperation({ summary: 'Subscribe to a plan' })
     async subscribe(

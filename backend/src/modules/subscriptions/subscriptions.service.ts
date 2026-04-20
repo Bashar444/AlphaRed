@@ -19,6 +19,69 @@ export class SubscriptionsService {
         return sub;
     }
 
+    /**
+     * Returns the user's current usage vs their plan limits.
+     * If no active subscription, returns Free-tier defaults (1 survey, 50 responses, 10 questions).
+     */
+    async getUsage(userId: string) {
+        const sub = await this.prisma.subscription.findUnique({
+            where: { userId },
+            include: { plan: true },
+        });
+
+        // Defaults for users without an active subscription (Free tier)
+        let plan = sub?.plan;
+        if (!plan || !sub || !['ACTIVE', 'TRIALING'].includes(sub.status)) {
+            const free = await this.prisma.plan.findFirst({ where: { slug: 'free' } });
+            plan = free || {
+                id: 'free',
+                slug: 'free',
+                name: 'Free',
+                maxSurveys: 1,
+                maxResponses: 50,
+                maxQuestions: 10,
+                maxTeamMembers: 0,
+                features: {},
+            } as any;
+        }
+
+        const planSafe = plan!;
+
+        const [surveysUsed, responsesUsed, surveys] = await Promise.all([
+            this.prisma.survey.count({ where: { userId, status: { not: 'ARCHIVED' } } }),
+            this.prisma.response.count({ where: { survey: { userId } } }),
+            this.prisma.survey.findMany({
+                where: { userId, status: { not: 'ARCHIVED' } },
+                select: { id: true, _count: { select: { questions: true } } },
+            }),
+        ]);
+        const maxQuestionsUsed = surveys.reduce((m, s) => Math.max(m, s._count.questions), 0);
+
+        return {
+            plan: {
+                id: planSafe.id,
+                slug: planSafe.slug,
+                name: planSafe.name,
+                maxSurveys: planSafe.maxSurveys,
+                maxResponses: planSafe.maxResponses,
+                maxQuestions: planSafe.maxQuestions,
+                maxTeamMembers: planSafe.maxTeamMembers,
+                features: planSafe.features,
+            },
+            usage: {
+                surveys: surveysUsed,
+                responses: responsesUsed,
+                maxQuestionsInAnySurvey: maxQuestionsUsed,
+            },
+            limits: {
+                surveys: { used: surveysUsed, max: planSafe.maxSurveys, exceeded: planSafe.maxSurveys > 0 && surveysUsed >= planSafe.maxSurveys },
+                responses: { used: responsesUsed, max: planSafe.maxResponses, exceeded: planSafe.maxResponses > 0 && responsesUsed >= planSafe.maxResponses },
+                questions: { used: maxQuestionsUsed, max: planSafe.maxQuestions, exceeded: planSafe.maxQuestions > 0 && maxQuestionsUsed >= planSafe.maxQuestions },
+            },
+            subscriptionStatus: sub?.status || 'NONE',
+        };
+    }
+
     async subscribe(userId: string, dto: CreateSubscriptionDto) {
         // Check if user already has an active subscription
         const existing = await this.prisma.subscription.findUnique({

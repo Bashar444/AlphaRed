@@ -170,4 +170,13 @@ export class SurveysController {
     ) {
         return this.surveysService.delete(id, userId);
     }
+
+    @Post(':id/duplicate')
+    @ApiOperation({ summary: 'Duplicate a survey (clones questions, status=DRAFT)' })
+    async duplicate(
+        @CurrentUser('id') userId: string,
+        @Param('id') id: string,
+    ) {
+        return this.surveysService.duplicate(id, userId);
+    }
 }

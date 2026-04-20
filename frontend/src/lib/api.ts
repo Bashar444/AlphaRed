@@ -72,6 +72,7 @@ export const surveys = {
     complete: (id: string | number) => request("PATCH", `/surveys/${id}/complete`),
     archive: (id: string | number) => request("PATCH", `/surveys/${id}/archive`),
     stats: (id: string | number) => request("GET", `/surveys/${id}/stats`),
+    duplicate: (id: string | number) => request<{ id: string }>("POST", `/surveys/${id}/duplicate`),
 };
 
 // ── Responses ───────────────────────────────────
@@ -133,8 +134,19 @@ export const exports_ = {
 };
 
 // ── Subscriptions ───────────────────────────────
+export interface PlanUsage {
+    plan: { id: string; slug: string; name: string; maxSurveys: number; maxResponses: number; maxQuestions: number; maxTeamMembers: number; features: Record<string, unknown> };
+    usage: { surveys: number; responses: number; maxQuestionsInAnySurvey: number };
+    limits: {
+        surveys: { used: number; max: number; exceeded: boolean };
+        responses: { used: number; max: number; exceeded: boolean };
+        questions: { used: number; max: number; exceeded: boolean };
+    };
+    subscriptionStatus: string;
+}
 export const subscriptions = {
     me: () => request("GET", "/subscriptions/me"),
+    usage: () => request<PlanUsage>("GET", "/subscriptions/me/usage"),
     subscribe: (planId: string, billingCycle?: string, discountCode?: string) =>
         request("POST", "/subscriptions/subscribe", { planId, billingCycle, discountCode }),
     cancel: () => request("POST", "/subscriptions/cancel"),

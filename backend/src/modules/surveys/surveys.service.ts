@@ -247,6 +247,50 @@ export class SurveysService {
         return { message: 'Survey deleted' };
     }
 
+    async duplicate(id: string, userId: string) {
+        const original = await this.prisma.survey.findUnique({
+            where: { id },
+            include: { questions: { orderBy: { order: 'asc' } } },
+        });
+        if (!original) throw new NotFoundException('Survey not found');
+        if (original.userId !== userId) throw new ForbiddenException('Cannot duplicate another user\'s survey');
+
+        const copy = await this.prisma.survey.create({
+            data: {
+                userId,
+                title: `${original.title} (Copy)`,
+                description: original.description,
+                status: 'DRAFT',
+                targetResponses: original.targetResponses,
+                targeting: original.targeting as any,
+                estimatedMinutes: original.estimatedMinutes,
+                language: original.language,
+                welcomeMessage: original.welcomeMessage,
+                thankYouMessage: original.thankYouMessage,
+                progressBar: original.progressBar,
+                randomizeQuestions: original.randomizeQuestions,
+                allowAnonymous: original.allowAnonymous,
+                category: original.category,
+                tags: original.tags,
+                questions: {
+                    create: original.questions.map((q) => ({
+                        order: q.order,
+                        type: q.type,
+                        text: q.text,
+                        description: q.description,
+                        required: q.required,
+                        options: q.options as any,
+                        validation: q.validation as any,
+                        logic: q.logic as any,
+                        mediaUrl: q.mediaUrl,
+                    })),
+                },
+            },
+            include: { questions: true },
+        });
+        return copy;
+    }
+
     async getStats(id: string, userId: string) {
         const survey = await this.findById(id, userId);
 

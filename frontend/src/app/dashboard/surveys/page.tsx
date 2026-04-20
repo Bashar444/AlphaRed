@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { PlanUsageBanner } from "@/components/plan-usage-banner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +15,7 @@ import {
     Trash2,
     Eye,
     BarChart3,
+    Copy,
 } from "lucide-react";
 
 interface Survey {
@@ -77,6 +79,15 @@ export default function SurveysPage() {
         }
     }
 
+    async function handleDuplicate(id: string) {
+        try {
+            const copy = await api.surveys.duplicate(id);
+            window.location.href = `/dashboard/surveys/${copy.id}`;
+        } catch (e) {
+            alert(e instanceof Error ? e.message : "Failed to duplicate");
+        }
+    }
+
     const filtered = surveys.filter((s) =>
         s.title.toLowerCase().includes(search.toLowerCase())
     );
@@ -91,6 +102,7 @@ export default function SurveysPage() {
 
     return (
         <div className="space-y-6">
+            <PlanUsageBanner />
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900">Surveys</h1>
@@ -130,6 +142,13 @@ export default function SurveysPage() {
                                         <Badge variant={statusColor[survey.status] || "default"}>
                                             {survey.status.toLowerCase()}
                                         </Badge>
+                                        <button
+                                            onClick={() => handleDuplicate(survey.id)}
+                                            title="Duplicate"
+                                            className="p-1.5 rounded-lg text-slate-400 hover:text-violet-600 hover:bg-violet-50 opacity-0 group-hover:opacity-100 transition-all"
+                                        >
+                                            <Copy className="w-4 h-4" />
+                                        </button>
                                         <button
                                             onClick={() => handleDelete(survey.id)}
                                             className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"

@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { api } from "@/lib/api";
 import { StatCard } from "@/components/ui/stat-card";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { PlanUsageBanner } from "@/components/plan-usage-banner";
 import { LineChartWidget } from "@/components/charts/line-chart-widget";
 import { BarChartWidget } from "@/components/charts/bar-chart-widget";
 import { PieChartWidget } from "@/components/charts/pie-chart-widget";
@@ -169,6 +170,8 @@ export default function DashboardPage() {
                     Here&apos;s an overview of your platform analytics
                 </p>
             </div>
+
+            {!isAdmin && <PlanUsageBanner />}
 
             {/* Primary Stat Cards */}
             <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-6">
