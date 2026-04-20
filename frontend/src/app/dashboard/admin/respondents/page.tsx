@@ -1,70 +1,115 @@
-"use client";
+﻿"use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { api } from "@/lib/api";
+import { api, type RespondentsAdminListResponse } from "@/lib/api";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, Shield, Ban, Search, CheckCircle } from "lucide-react";
+import {
+    Users,
+    Shield,
+    Ban,
+    Search,
+    CheckCircle,
+    XCircle,
+    Clock,
+    Star,
+} from "lucide-react";
 
-interface Respondent {
-    id: string;
-    name: string;
-    email: string;
-    phone: string;
-    status: string;
-    age: number;
-    gender: string;
-    locationState: string;
-    locationCity: string;
-    createdAt: string;
+type Respondent = RespondentsAdminListResponse["respondents"][number];
+
+interface Stats {
+    total: number;
+    active: number;
+    pending: number;
+    suspended: number;
+    banned: number;
+    avgQualityScore: number;
+}
+
+const KYC_TABS: Array<{ key: string; label: string }> = [
+    { key: "", label: "All" },
+    { key: "PENDING", label: "Pending KYC" },
+    { key: "OTP_VERIFIED", label: "OTP verified" },
+    { key: "FULL_VERIFIED", label: "Verified" },
+    { key: "REJECTED", label: "Rejected" },
+];
+
+function kycBadgeVariant(s: string): "success" | "warning" | "danger" | "info" | "default" {
+    if (s === "FULL_VERIFIED") return "success";
+    if (s === "OTP_VERIFIED") return "info";
+    if (s === "PENDING") return "warning";
+    if (s === "REJECTED" || s === "SUSPENDED") return "danger";
+    return "default";
+}
+
+function statusBadgeVariant(s: string): "success" | "warning" | "danger" | "default" {
+    if (s === "ACTIVE") return "success";
+    if (s === "PENDING") return "warning";
+    if (s === "SUSPENDED" || s === "BANNED") return "danger";
+    return "default";
 }
 
 export default function AdminRespondentsPage() {
     const { user } = useAuth();
-    const [respondents, setRespondents] = useState<Respondent[]>([]);
+    const [data, setData] = useState<Respondent[]>([]);
+    const [stats, setStats] = useState<Stats | null>(null);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
+    const [kycFilter, setKycFilter] = useState("");
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [busyId, setBusyId] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        loadRespondents();
-    }, []);
-
-    async function loadRespondents() {
+    const load = useCallback(async () => {
+        setLoading(true);
         try {
-            const data = await api.admin.respondents();
-            setRespondents(Array.isArray(data) ? data : []);
+            const [resp, st] = await Promise.all([
+                api.respondentsAdmin.list({ page, limit: 25, kycStatus: kycFilter || undefined, search: search || undefined }),
+                api.respondentsAdmin.stats().catch(() => null),
+            ]);
+            setData(resp.respondents);
+            setTotalPages(resp.pagination.totalPages);
+            if (st) setStats(st);
         } catch {
-            setRespondents([]);
+            setData([]);
         } finally {
             setLoading(false);
         }
-    }
+    }, [page, kycFilter, search]);
 
-    async function handleSuspend(id: string) {
-        if (!confirm("Suspend this respondent?")) return;
+    useEffect(() => {
+        load();
+    }, [load]);
+
+    async function handleKyc(id: string, kycStatus: string, label: string) {
+        if (!confirm(`${label} this respondent?`)) return;
+        setError(null);
+        setBusyId(id);
         try {
-            await api.admin.suspendRespondent(id as unknown as number);
-            setRespondents((prev) =>
-                prev.map((r) => (r.id === id ? { ...r, status: "SUSPENDED" } : r))
-            );
-        } catch {
-            // ignore
+            await api.respondentsAdmin.updateKyc(id, kycStatus);
+            await load();
+        } catch (e) {
+            setError(e instanceof Error ? e.message : "Failed to update KYC");
+        } finally {
+            setBusyId(null);
         }
     }
 
-    const filtered = respondents.filter((r) => {
-        if (!search) return true;
-        const q = search.toLowerCase();
-        return (
-            r.name?.toLowerCase().includes(q) ||
-            r.email?.toLowerCase().includes(q) ||
-            r.locationState?.toLowerCase().includes(q)
-        );
-    });
-
-    const activeCount = respondents.filter((r) => r.status === "ACTIVE").length;
-    const suspendedCount = respondents.filter((r) => r.status === "SUSPENDED").length;
+    async function handleBan(id: string) {
+        if (!confirm("Ban this respondent permanently?")) return;
+        setError(null);
+        setBusyId(id);
+        try {
+            await api.respondentsAdmin.ban(id);
+            await load();
+        } catch (e) {
+            setError(e instanceof Error ? e.message : "Failed to ban");
+        } finally {
+            setBusyId(null);
+        }
+    }
 
     if (!user?.is_admin) {
         return (
@@ -81,52 +126,85 @@ export default function AdminRespondentsPage() {
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-2xl font-bold text-slate-900">Respondents</h1>
+                <h1 className="text-2xl font-bold text-slate-900">Respondent Panel</h1>
                 <p className="text-sm text-slate-500 mt-1">
-                    Manage survey respondents across the platform
+                    Review KYC submissions, manage quality, and moderate the panel.
                 </p>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-4">
+            {error && (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    {error}
+                </div>
+            )}
+
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <Card>
                     <CardContent className="pt-6 text-center">
-                        <p className="text-2xl font-bold text-slate-900">{respondents.length}</p>
-                        <p className="text-sm text-slate-500">Total</p>
+                        <p className="text-2xl font-bold text-slate-900">{stats?.total ?? "â€”"}</p>
+                        <p className="text-xs text-slate-500 mt-1">Total respondents</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardContent className="pt-6 text-center">
-                        <p className="text-2xl font-bold text-emerald-600">{activeCount}</p>
-                        <p className="text-sm text-slate-500">Active</p>
+                        <p className="text-2xl font-bold text-emerald-600">{stats?.active ?? "â€”"}</p>
+                        <p className="text-xs text-slate-500 mt-1">Active</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardContent className="pt-6 text-center">
-                        <p className="text-2xl font-bold text-red-600">{suspendedCount}</p>
-                        <p className="text-sm text-slate-500">Suspended</p>
+                        <p className="text-2xl font-bold text-amber-600">{stats?.pending ?? "â€”"}</p>
+                        <p className="text-xs text-slate-500 mt-1">Pending</p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardContent className="pt-6 text-center">
+                        <p className="text-2xl font-bold text-red-600">{(stats?.suspended ?? 0) + (stats?.banned ?? 0)}</p>
+                        <p className="text-xs text-slate-500 mt-1">Suspended / Banned</p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardContent className="pt-6 text-center">
+                        <p className="text-2xl font-bold text-violet-600 inline-flex items-center gap-1">
+                            <Star className="w-4 h-4" />
+                            {stats ? stats.avgQualityScore.toFixed(2) : "â€”"}
+                        </p>
+                        <p className="text-xs text-slate-500 mt-1">Avg quality</p>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* Search */}
+            <div className="flex flex-wrap gap-2">
+                {KYC_TABS.map((t) => (
+                    <button
+                        key={t.key || "all"}
+                        onClick={() => { setKycFilter(t.key); setPage(1); }}
+                        className={`px-3 py-1.5 rounded-full text-sm border transition ${kycFilter === t.key
+                                ? "bg-violet-600 text-white border-violet-600"
+                                : "bg-white text-slate-700 border-slate-200 hover:border-violet-300"
+                            }`}
+                    >
+                        {t.label}
+                    </button>
+                ))}
+            </div>
+
             <div className="relative max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                     type="text"
-                    placeholder="Search by name, email, or state..."
+                    placeholder="Search by name or email..."
                     value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+                    onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                     className="pl-9 pr-3 py-2 w-full border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
                 />
             </div>
 
-            {/* Table */}
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Users className="w-5 h-5" />
-                        Respondents ({filtered.length})
+                        Respondents ({data.length})
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -134,56 +212,107 @@ export default function AdminRespondentsPage() {
                         <div className="flex items-center justify-center h-32">
                             <div className="w-6 h-6 border-2 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
                         </div>
-                    ) : filtered.length === 0 ? (
-                        <p className="text-sm text-slate-500 text-center py-8">
-                            No respondents found
-                        </p>
+                    ) : data.length === 0 ? (
+                        <p className="text-sm text-slate-500 text-center py-8">No respondents found</p>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b border-slate-200">
-                                        <th className="text-left py-3 px-2 font-medium text-slate-500">Name</th>
-                                        <th className="text-left py-3 px-2 font-medium text-slate-500">Email</th>
-                                        <th className="text-left py-3 px-2 font-medium text-slate-500">Age</th>
-                                        <th className="text-left py-3 px-2 font-medium text-slate-500">Gender</th>
-                                        <th className="text-left py-3 px-2 font-medium text-slate-500">State</th>
+                                        <th className="text-left py-3 px-2 font-medium text-slate-500">Name / Email</th>
+                                        <th className="text-left py-3 px-2 font-medium text-slate-500">Location</th>
+                                        <th className="text-left py-3 px-2 font-medium text-slate-500">Quality</th>
+                                        <th className="text-left py-3 px-2 font-medium text-slate-500">Responses</th>
+                                        <th className="text-left py-3 px-2 font-medium text-slate-500">KYC</th>
                                         <th className="text-left py-3 px-2 font-medium text-slate-500">Status</th>
                                         <th className="text-right py-3 px-2 font-medium text-slate-500">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
-                                    {filtered.map((r) => (
+                                    {data.map((r) => (
                                         <tr key={r.id} className="hover:bg-slate-50">
-                                            <td className="py-3 px-2 font-medium text-slate-900">
-                                                {r.name}
-                                            </td>
-                                            <td className="py-3 px-2 text-slate-600">{r.email}</td>
-                                            <td className="py-3 px-2 text-slate-600">{r.age || "—"}</td>
-                                            <td className="py-3 px-2 text-slate-600">{r.gender || "—"}</td>
-                                            <td className="py-3 px-2 text-slate-600">{r.locationState || "—"}</td>
                                             <td className="py-3 px-2">
-                                                <Badge variant={r.status === "ACTIVE" ? "success" : "danger"}>
+                                                <div className="font-medium text-slate-900">{r.name || "â€”"}</div>
+                                                <div className="text-xs text-slate-500">{r.email || "â€”"}</div>
+                                            </td>
+                                            <td className="py-3 px-2 text-slate-600">
+                                                {[r.city, r.state, r.country].filter(Boolean).join(", ") || "â€”"}
+                                            </td>
+                                            <td className="py-3 px-2 text-slate-600">{r.qualityScore?.toFixed(2) ?? "â€”"}</td>
+                                            <td className="py-3 px-2 text-slate-600">{r._count?.responses ?? r.totalResponses ?? 0}</td>
+                                            <td className="py-3 px-2">
+                                                <Badge variant={kycBadgeVariant(r.kycStatus)}>
+                                                    {r.kycStatus.replace(/_/g, " ").toLowerCase()}
+                                                </Badge>
+                                            </td>
+                                            <td className="py-3 px-2">
+                                                <Badge variant={statusBadgeVariant(r.status)}>
                                                     {r.status.toLowerCase()}
                                                 </Badge>
                                             </td>
                                             <td className="py-3 px-2 text-right">
-                                                {r.status === "ACTIVE" ? (
-                                                    <button
-                                                        onClick={() => handleSuspend(r.id)}
-                                                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50"
-                                                        title="Suspend"
-                                                    >
-                                                        <Ban className="w-4 h-4" />
-                                                    </button>
-                                                ) : (
-                                                    <CheckCircle className="w-4 h-4 text-slate-300 inline" />
-                                                )}
+                                                <div className="inline-flex items-center gap-1">
+                                                    {r.kycStatus !== "FULL_VERIFIED" && r.status !== "BANNED" && (
+                                                        <button
+                                                            onClick={() => handleKyc(r.id, "FULL_VERIFIED", "Approve KYC")}
+                                                            disabled={busyId === r.id}
+                                                            className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 disabled:opacity-50"
+                                                            title="Approve KYC"
+                                                        >
+                                                            <CheckCircle className="w-4 h-4" />
+                                                        </button>
+                                                    )}
+                                                    {r.kycStatus !== "REJECTED" && r.status !== "BANNED" && (
+                                                        <button
+                                                            onClick={() => handleKyc(r.id, "REJECTED", "Reject KYC")}
+                                                            disabled={busyId === r.id}
+                                                            className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 disabled:opacity-50"
+                                                            title="Reject KYC"
+                                                        >
+                                                            <XCircle className="w-4 h-4" />
+                                                        </button>
+                                                    )}
+                                                    {r.status !== "BANNED" && (
+                                                        <button
+                                                            onClick={() => handleBan(r.id)}
+                                                            disabled={busyId === r.id}
+                                                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-50"
+                                                            title="Ban"
+                                                        >
+                                                            <Ban className="w-4 h-4" />
+                                                        </button>
+                                                    )}
+                                                    {r.status === "BANNED" && (
+                                                        <span className="text-xs text-red-500 inline-flex items-center gap-1 px-2">
+                                                            <Clock className="w-3 h-3" /> banned
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
+                        </div>
+                    )}
+
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
+                            <button
+                                disabled={page <= 1}
+                                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg disabled:opacity-50 hover:bg-slate-50"
+                            >
+                                Previous
+                            </button>
+                            <span className="text-sm text-slate-500">Page {page} of {totalPages}</span>
+                            <button
+                                disabled={page >= totalPages}
+                                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                                className="px-3 py-1.5 text-sm border border-slate-200 rounded-lg disabled:opacity-50 hover:bg-slate-50"
+                            >
+                                Next
+                            </button>
                         </div>
                     )}
                 </CardContent>

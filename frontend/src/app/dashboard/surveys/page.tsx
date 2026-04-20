@@ -41,6 +41,7 @@ export default function SurveysPage() {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [creating, setCreating] = useState(false);
+    const [actionError, setActionError] = useState<string | null>(null);
 
     useEffect(() => {
         loadSurveys();
@@ -59,13 +60,15 @@ export default function SurveysPage() {
 
     async function handleCreate() {
         setCreating(true);
+        setActionError(null);
         try {
             const survey = await api.surveys.create({
                 title: "Untitled Survey",
                 description: "",
             });
             window.location.href = `/dashboard/surveys/${survey.id}`;
-        } catch {
+        } catch (e) {
+            setActionError(e instanceof Error ? e.message : "Failed to create survey");
             setCreating(false);
         }
     }
@@ -81,11 +84,12 @@ export default function SurveysPage() {
     }
 
     async function handleDuplicate(id: string) {
+        setActionError(null);
         try {
             const copy = await api.surveys.duplicate(id);
             window.location.href = `/dashboard/surveys/${copy.id}`;
         } catch (e) {
-            alert(e instanceof Error ? e.message : "Failed to duplicate");
+            setActionError(e instanceof Error ? e.message : "Failed to duplicate");
         }
     }
 
@@ -104,6 +108,14 @@ export default function SurveysPage() {
     return (
         <div className="space-y-6">
             <PlanUsageBanner />
+            {actionError && (
+                <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 flex items-start justify-between gap-3">
+                    <span>{actionError}</span>
+                    <Link href="/billing/upgrade" className="font-semibold whitespace-nowrap hover:underline">
+                        Upgrade →
+                    </Link>
+                </div>
+            )}
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900">Surveys</h1>

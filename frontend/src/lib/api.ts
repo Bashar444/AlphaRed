@@ -549,6 +549,42 @@ export const settings = {
 
 export const roles = crudModule("/roles");
 
+export interface RespondentsAdminListResponse {
+    respondents: Array<{
+        id: string;
+        email: string | null;
+        name: string | null;
+        status: string;
+        kycStatus: string;
+        qualityScore: number;
+        totalResponses: number;
+        country: string | null;
+        state: string | null;
+        city: string | null;
+        verifiedAt: string | null;
+        createdAt: string;
+        _count?: { responses: number; invitations: number };
+    }>;
+    pagination: { total: number; page: number; limit: number; totalPages: number };
+}
+
+export const respondentsAdmin = {
+    list: (params?: { page?: number; limit?: number; status?: string; kycStatus?: string; search?: string }) => {
+        const qs = params
+            ? "?" + new URLSearchParams(
+                Object.entries(params)
+                    .filter(([, v]) => v !== undefined && v !== "")
+                    .map(([k, v]) => [k, String(v)])
+            ).toString()
+            : "";
+        return request<RespondentsAdminListResponse>("GET", `/respondents${qs}`);
+    },
+    stats: () => request<{ total: number; active: number; pending: number; suspended: number; banned: number; avgQualityScore: number }>("GET", "/respondents/stats"),
+    get: (id: string) => request("GET", `/respondents/${id}`),
+    updateKyc: (id: string, kycStatus: string) => request("PATCH", `/respondents/${id}/kyc`, { kycStatus }),
+    ban: (id: string) => request("PATCH", `/respondents/${id}/ban`),
+};
+
 export interface SurveyTemplateListItem {
     id: string;
     title: string;
@@ -613,5 +649,6 @@ export const api = {
     reports,
     settings,
     roles,
+    respondentsAdmin,
     templates,
 };
