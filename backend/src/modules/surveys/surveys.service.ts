@@ -350,4 +350,61 @@ export class SurveysService {
             averageDurationSecs: avgDuration._avg.durationSecs ?? 0,
         };
     }
+
+    async getQualityBreakdown(id: string, userId: string) {
+        const survey = await this.findById(id, userId);
+
+        const responses = await this.prisma.response.findMany({
+            where: { surveyId: id },
+            select: { id: true, status: true, qualityScore: true, qualityFlags: true, durationSecs: true, createdAt: true },
+        });
+
+        const total = responses.length;
+        const buckets = { excellent: 0, good: 0, fair: 0, poor: 0, unscored: 0 };
+        const statusCounts: Record<string, number> = { PENDING: 0, COMPLETED: 0, REJECTED: 0, FLAGGED: 0, DUPLICATE: 0 };
+        const flagCounts: Record<string, number> = {};
+        let scoreSum = 0;
+        let scored = 0;
+
+        for (const r of responses) {
+            statusCounts[r.status] = (statusCounts[r.status] || 0) + 1;
+            if (r.qualityScore == null) {
+                buckets.unscored++;
+            } else {
+                scoreSum += r.qualityScore;
+                scored++;
+                if (r.qualityScore >= 0.85) buckets.excellent++;
+                else if (r.qualityScore >= 0.65) buckets.good++;
+                else if (r.qualityScore >= 0.4) buckets.fair++;
+                else buckets.poor++;
+            }
+            const flags = (r.qualityFlags as Record<string, unknown> | null) || null;
+            if (flags && typeof flags === 'object') {
+                for (const key of Object.keys(flags)) {
+                    if (flags[key]) flagCounts[key] = (flagCounts[key] || 0) + 1;
+                }
+            }
+        }
+
+        const avgQuality = scored > 0 ? scoreSum / scored : 0;
+        const acceptanceRate = total > 0
+            ? ((statusCounts.COMPLETED || 0) / total) * 100
+            : 0;
+        const rejectionRate = total > 0
+            ? (((statusCounts.REJECTED || 0) + (statusCounts.FLAGGED || 0) + (statusCounts.DUPLICATE || 0)) / total) * 100
+            : 0;
+
+        return {
+            surveyId: id,
+            title: survey.title,
+            total,
+            scored,
+            avgQuality,
+            acceptanceRate,
+            rejectionRate,
+            buckets,
+            statusCounts,
+            flagCounts,
+        };
+    }
 }

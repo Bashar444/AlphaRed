@@ -105,6 +105,15 @@ export class SurveysController {
         return this.surveysService.getStats(id, userId);
     }
 
+    @Get(':id/quality')
+    @ApiOperation({ summary: 'Get response quality breakdown' })
+    async getQuality(
+        @CurrentUser('id') userId: string,
+        @Param('id') id: string,
+    ) {
+        return this.surveysService.getQualityBreakdown(id, userId);
+    }
+
     @Put(':id')
     @ApiOperation({ summary: 'Update survey details' })
     async update(

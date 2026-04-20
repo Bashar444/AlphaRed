@@ -15,6 +15,7 @@ import {
     CheckCircle,
     FileText,
     Loader2,
+    Sparkles,
 } from "lucide-react";
 
 interface ResponseItem {
@@ -117,6 +118,14 @@ export default function SurveyResponsesPage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.push(`/dashboard/surveys/${surveyId}/quality`)}
+                    >
+                        <Sparkles className="w-4 h-4 mr-1" />
+                        Quality
+                    </Button>
                     <Button variant="outline" size="sm" onClick={handleRunAnalysis} disabled={runningAnalysis}>
                         {runningAnalysis ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <BarChart3 className="w-4 h-4 mr-1" />}
                         Run Analysis

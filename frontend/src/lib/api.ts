@@ -72,6 +72,18 @@ export const surveys = {
     complete: (id: string | number) => request("PATCH", `/surveys/${id}/complete`),
     archive: (id: string | number) => request("PATCH", `/surveys/${id}/archive`),
     stats: (id: string | number) => request("GET", `/surveys/${id}/stats`),
+    quality: (id: string | number) => request<{
+        surveyId: string;
+        title: string;
+        total: number;
+        scored: number;
+        avgQuality: number;
+        acceptanceRate: number;
+        rejectionRate: number;
+        buckets: { excellent: number; good: number; fair: number; poor: number; unscored: number };
+        statusCounts: Record<string, number>;
+        flagCounts: Record<string, number>;
+    }>("GET", `/surveys/${id}/quality`),
     duplicate: (id: string | number) => request<{ id: string }>("POST", `/surveys/${id}/duplicate`),
 };
 
