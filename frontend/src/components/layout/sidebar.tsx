@@ -50,6 +50,7 @@ const researcherNav = [
     { href: "/dashboard/exports", label: "Exports", icon: Download },
     { href: "/dashboard/notifications", label: "Notifications", icon: Bell },
     { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
+    { href: "/dashboard/api-access", label: "API Access", icon: Key },
     { href: "/dashboard/profile", label: "Profile", icon: User },
 ];
 

@@ -91,8 +91,45 @@ export const analysis = {
 
 // ── Exports ─────────────────────────────────────
 export const exports_ = {
-    list: (surveyId: number) => request("GET", `/surveys/${surveyId}/exports`),
-    generate: (surveyId: number, format: string) => request("POST", `/surveys/${surveyId}/exports/${format}`),
+    list: (surveyId?: string | number) =>
+        request<Array<{ id: string; surveyId: string; format: string; fileUrl?: string; fileName?: string; status: string; createdAt: string }>>(
+            "GET", surveyId !== undefined ? `/exports?surveyId=${encodeURIComponent(String(surveyId))}` : "/exports",
+        ),
+    /**
+     * Triggers backend to generate + stream the export. Saves file via blob download in browser.
+     * Returns { downloadUrl } pointing at a temporary blob URL.
+     */
+    generate: async (surveyId: string | number, format: string): Promise<{ downloadUrl: string; fileUrl?: string }> => {
+        const token = getToken();
+        const res = await fetch(`${API_BASE}/exports`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: JSON.stringify({ surveyId: String(surveyId), format: String(format).toUpperCase() }),
+        });
+        if (!res.ok) {
+            let msg = `Export failed (${res.status})`;
+            try { const j = await res.json(); msg = j.message || msg; } catch { /* binary */ }
+            throw new Error(msg);
+        }
+        const disposition = res.headers.get("Content-Disposition") || "";
+        const match = disposition.match(/filename="?([^"]+)"?/);
+        const fileName = match?.[1] || `export.${format.toLowerCase()}`;
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        // Auto-download
+        if (typeof window !== "undefined") {
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        }
+        return { downloadUrl: url };
+    },
 };
 
 // ── Subscriptions ───────────────────────────────

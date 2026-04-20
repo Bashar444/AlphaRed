@@ -21,23 +21,27 @@ interface Survey {
 
 interface ExportItem {
     id: string;
+    surveyId: string;
     format: string;
-    fileUrl: string;
+    fileUrl?: string;
+    fileName?: string;
+    status: string;
     createdAt: string;
 }
 
 const formatIcons: Record<string, React.ReactNode> = {
-    csv: <FileSpreadsheet className="w-5 h-5 text-emerald-600" />,
-    xls: <FileSpreadsheet className="w-5 h-5 text-green-600" />,
-    pdf: <FileText className="w-5 h-5 text-red-500" />,
-    zip: <FileArchive className="w-5 h-5 text-amber-600" />,
+    CSV: <FileSpreadsheet className="w-5 h-5 text-emerald-600" />,
+    XLS: <FileSpreadsheet className="w-5 h-5 text-green-600" />,
+    PDF: <FileText className="w-5 h-5 text-red-500" />,
+    ZIP: <FileArchive className="w-5 h-5 text-amber-600" />,
+    JSON: <FileText className="w-5 h-5 text-blue-500" />,
 };
 
 const formats = [
-    { value: "csv", label: "CSV" },
-    { value: "xls", label: "Excel" },
-    { value: "pdf", label: "PDF Report" },
-    { value: "zip", label: "ZIP Bundle" },
+    { value: "CSV", label: "CSV" },
+    { value: "XLS", label: "Excel" },
+    { value: "PDF", label: "PDF Report" },
+    { value: "JSON", label: "JSON" },
 ];
 
 export default function ExportsPage() {
@@ -61,8 +65,9 @@ export default function ExportsPage() {
 
     async function loadExports(id: string) {
         try {
-            const data = await api.exports.list(Number(id));
-            setExports(data || []);
+            const data = (await api.exports.list(id)) as ExportItem[];
+            // Filter to selected survey since backend returns all of user's exports
+            setExports((data || []).filter((e) => e.surveyId === id));
         } catch {
             setExports([]);
         }
@@ -72,13 +77,10 @@ export default function ExportsPage() {
         if (!selectedId) return;
         setGenerating(format);
         try {
-            const result = await api.exports.generate(Number(selectedId), format);
-            if (result.downloadUrl || result.fileUrl) {
-                window.open(result.downloadUrl || result.fileUrl, "_blank");
-            }
+            await api.exports.generate(selectedId, format);
             await loadExports(selectedId);
-        } catch {
-            // handle error
+        } catch (e) {
+            alert(e instanceof Error ? e.message : "Export failed");
         } finally {
             setGenerating(null);
         }
@@ -168,7 +170,7 @@ export default function ExportsPage() {
                                     className="flex items-center justify-between py-3"
                                 >
                                     <div className="flex items-center gap-3">
-                                        {formatIcons[exp.format]}
+                                        {formatIcons[exp.format.toUpperCase()] || <FileText className="w-5 h-5 text-slate-400" />}
                                         <div>
                                             <p className="text-sm font-medium text-slate-900">
                                                 {exp.format.toUpperCase()} Export
