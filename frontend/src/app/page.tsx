@@ -25,9 +25,17 @@ import { api } from "@/lib/api";
 interface CmsMenuItem {
   id: string;
   label: string;
-  url: string;
+  url?: string;
+  pageId?: string;
   target: "_self" | "_blank";
-  status: string;
+  order: number;
+}
+
+interface CmsMenu {
+  id: string;
+  name: string;
+  location: string;
+  items: CmsMenuItem[];
 }
 
 interface FooterColumn {
@@ -215,10 +223,25 @@ export default function LandingPage() {
 
   useEffect(() => {
     api.publicCms.menus().then((data) => {
-      if (Array.isArray(data)) setMenuItems(data.filter((m: CmsMenuItem) => m.status === "active"));
-    }).catch(() => { });
-    api.publicCms.footer().then((data) => {
-      if (data && typeof data === "object") setFooter(data as FooterConfig);
+      if (!Array.isArray(data)) return;
+      const menus = data as CmsMenu[];
+      const header = menus.find((m) => m.location === "header");
+      if (header) {
+        setMenuItems([...header.items].sort((a, b) => a.order - b.order));
+      }
+      const footerMenu = menus.find((m) => m.location === "footer");
+      if (footerMenu) {
+        setFooter({
+          columns: [{
+            title: footerMenu.name || "Links",
+            links: footerMenu.items
+              .sort((a, b) => a.order - b.order)
+              .map((it) => ({ label: it.label, url: it.url || (it.pageId ? `/p/${it.pageId}` : "#") })),
+          }],
+          copyright: "",
+          social_links: [],
+        });
+      }
     }).catch(() => { });
   }, []);
 
@@ -237,7 +260,7 @@ export default function LandingPage() {
             <a href="#pricing" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">Pricing</a>
             <Link href="/about" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">About</Link>
             {menuItems.map((item) => (
-              <Link key={item.id} href={item.url} target={item.target} className="text-sm text-slate-600 hover:text-slate-900 transition-colors">{item.label}</Link>
+              <Link key={item.id} href={item.url || "#"} target={item.target} className="text-sm text-slate-600 hover:text-slate-900 transition-colors">{item.label}</Link>
             ))}
             <Link href="/login" className="text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors">Sign in</Link>
             <Link href="/register" className="h-9 px-5 inline-flex items-center rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors shadow-md shadow-violet-200">

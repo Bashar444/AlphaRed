@@ -104,7 +104,9 @@ const adminSurveyOpsNav = [
 ];
 
 const adminSettingsNav = [
-    { href: "/dashboard/admin/cms", label: "CMS Pages", icon: Globe },
+    { href: "/dashboard/admin/cms/pages", label: "CMS Pages", icon: FileText },
+    { href: "/dashboard/admin/cms/menus", label: "Menus", icon: Globe },
+    { href: "/dashboard/admin/audit-log", label: "Audit Log", icon: ScrollText },
     { href: "/dashboard/admin/subscriptions", label: "Subscriptions", icon: CreditCard },
     { href: "/dashboard/admin/email-config", label: "Email Config", icon: MessageSquare },
     { href: "/dashboard/admin/seo-config", label: "SEO Config", icon: Globe },

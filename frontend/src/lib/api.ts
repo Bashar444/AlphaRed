@@ -225,26 +225,76 @@ export const apiKeys = {
     remove: (id: number) => request("DELETE", `/api-keys/${id}`),
 };
 
-// ── Admin CMS ───────────────────────────────────
+// ── Admin CMS (Pages + Menus) ───────────────────
 export const adminCms = {
-    menus: () => request("GET", "/admin/cms/menus"),
-    saveMenus: (data: Record<string, unknown>) => request("POST", "/admin/cms/menus", data),
-    pages: () => request("GET", "/admin/cms/pages"),
-    createPage: (data: Record<string, unknown>) => request("POST", "/admin/cms/pages", data),
-    getPage: (id: number) => request("GET", `/admin/cms/pages/${id}`),
-    updatePage: (id: number, data: Record<string, unknown>) => request("PUT", `/admin/cms/pages/${id}`, data),
-    deletePage: (id: number) => request("DELETE", `/admin/cms/pages/${id}`),
-    getSections: (pageId: number) => request("GET", `/admin/cms/pages/${pageId}/sections`),
-    saveSections: (pageId: number, sections: unknown[]) => request("POST", `/admin/cms/pages/${pageId}/sections`, { sections }),
-    getFooter: () => request("GET", "/admin/cms/footer"),
-    saveFooter: (data: Record<string, unknown>) => request("POST", "/admin/cms/footer", data),
+    // Pages — backed by /admin/pages
+    pages: (published?: boolean) => {
+        const qs = published === undefined ? "" : `?published=${published}`;
+        return request<Array<{ id: string; title: string; slug: string; published: boolean; updatedAt: string; metaTitle?: string; metaDesc?: string; content?: unknown }>>(
+            "GET",
+            `/admin/pages${qs}`
+        );
+    },
+    createPage: (data: { title: string; slug: string; content?: unknown; metaTitle?: string; metaDesc?: string; published?: boolean }) =>
+        request("POST", "/admin/pages", data),
+    getPage: (slug: string) => request("GET", `/admin/pages/${encodeURIComponent(slug)}`),
+    updatePage: (id: string, data: Record<string, unknown>) =>
+        request("PUT", `/admin/pages/${id}`, data),
+    deletePage: (id: string) => request("DELETE", `/admin/pages/${id}`),
+
+    // Menus — backed by /admin/menus
+    menus: () => request<Array<{ id: string; name: string; location: string; items: Array<{ id: string; label: string; url?: string; pageId?: string; order: number; target: string }> }>>(
+        "GET", "/admin/menus"
+    ),
+    createMenu: (data: { name: string; location: string }) =>
+        request("POST", "/admin/menus", data),
+    addMenuItem: (data: { menuId: string; label: string; url?: string; pageId?: string; order?: number; target?: string; parentId?: string }) =>
+        request("POST", "/admin/menus/items", data),
+    removeMenuItem: (id: string) => request("DELETE", `/admin/menus/items/${id}`),
+
+    // Media library
+    media: (page = 1, limit = 20) => request("GET", `/admin/media?page=${page}&limit=${limit}`),
+    deleteMedia: (id: string) => request("DELETE", `/admin/media/${id}`),
 };
 
-// ── Public CMS ──────────────────────────────────
+// ── Public CMS (no auth) ────────────────────────
 export const publicCms = {
-    menus: () => request("GET", "/public/cms/menus"),
-    footer: () => request("GET", "/public/cms/footer"),
-    page: (slug: string) => request("GET", `/public/cms/pages/${slug}`),
+    siteConfig: () => request("GET", "/public/site-config"),
+    pages: () => request<Array<{ slug: string; title: string; metaDesc?: string; updatedAt: string }>>(
+        "GET", "/public/pages"
+    ),
+    page: (slug: string) => request("GET", `/public/pages/${encodeURIComponent(slug)}`),
+    menus: () => request<Array<{ id: string; name: string; location: string; items: Array<{ label: string; url?: string; pageId?: string; order: number }> }>>(
+        "GET", "/cms/menus"
+    ),
+};
+
+// ── Audit logs ──────────────────────────────────
+export const auditLogs = {
+    list: (params?: { userId?: string; entity?: string; action?: string; from?: string; to?: string }) => {
+        const sp = new URLSearchParams();
+        if (params?.userId) sp.set("userId", params.userId);
+        if (params?.entity) sp.set("entity", params.entity);
+        if (params?.action) sp.set("action", params.action);
+        if (params?.from) sp.set("from", params.from);
+        if (params?.to) sp.set("to", params.to);
+        const qs = sp.toString();
+        return request<Array<{ id: string; userId: string; action: string; entity: string; entityId?: string; oldValues?: unknown; newValues?: unknown; ipAddress?: string; createdAt: string; user?: { name: string; email: string } }>>(
+            "GET",
+            `/audit-logs${qs ? "?" + qs : ""}`
+        );
+    },
+};
+
+// ── Payments / Checkout ─────────────────────────
+export const payments = {
+    checkout: (planId: string, gateway: "stripe" | "razorpay", billingCycle: "MONTHLY" | "ANNUAL" = "MONTHLY") =>
+        request<{ url?: string; orderId?: string; amount?: number; currency?: string; keyId?: string; sessionId?: string }>(
+            "POST", "/payments/checkout", { planId, gateway, billingCycle }
+        ),
+    verifyRazorpay: (data: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) =>
+        request("POST", "/payments/razorpay/verify", data),
+    myInvoices: () => request("GET", "/payments/invoices"),
 };
 
 // ── Respondent Self-Service ─────────────────────
@@ -414,6 +464,8 @@ export const api = {
     apiKeys,
     adminCms,
     publicCms,
+    auditLogs,
+    payments,
     public: publicApi,
     respondent,
     projects,
