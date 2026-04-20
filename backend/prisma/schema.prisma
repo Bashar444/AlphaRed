@@ -42,6 +42,7 @@ model User {
   leads               Lead[]             @relation("AgentLeads")
   assignedLeads       Lead[]             @relation("AssignedLeads")
   whiteLabel          WhiteLabel?
+  apiAccessRequests   ApiAccessRequest[] @relation("ApiAccessRequester")
 }
 
 enum UserRole {
@@ -746,6 +747,29 @@ model ApiKey {
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
   user        User      @relation(fields: [userId], references: [id])
+}
+
+model ApiAccessRequest {
+  id          String              @id @default(cuid())
+  userId      String
+  reason      String
+  useCase     String
+  status      ApiAccessStatus     @default(PENDING)
+  adminNotes  String?
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  user        User                @relation("ApiAccessRequester", fields: [userId], references: [id])
+
+  @@index([status])
+  @@index([userId])
+}
+
+enum ApiAccessStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 // ═══════════════════════════════════════════

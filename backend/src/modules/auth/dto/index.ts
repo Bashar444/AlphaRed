@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength, IsOptional, IsEnum, IsIn } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MinLength, IsOptional, IsEnum, IsIn, Matches, ValidateIf } from 'class-validator';
 
 export class RegisterDto {
     @IsEmail()
@@ -11,6 +11,11 @@ export class RegisterDto {
     @IsString()
     @MinLength(8)
     password!: string;
+
+    @IsOptional()
+    @IsString()
+    @MinLength(8)
+    confirmPassword?: string;
 
     @IsOptional()
     @IsString()
@@ -61,6 +66,10 @@ export class UpdateProfileDto {
     name?: string;
 
     @IsOptional()
+    @IsEmail()
+    email?: string;
+
+    @IsOptional()
     @IsString()
     avatarUrl?: string;
 
@@ -93,4 +102,10 @@ export class ChangePasswordDto {
     @IsString()
     @MinLength(8)
     newPassword!: string;
+}
+
+export class VerifyEmailDto {
+    @IsString()
+    @IsNotEmpty()
+    token!: string;
 }

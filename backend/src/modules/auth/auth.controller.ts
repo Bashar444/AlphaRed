@@ -18,6 +18,7 @@ import {
     ResetPasswordDto,
     UpdateProfileDto,
     ChangePasswordDto,
+    VerifyEmailDto,
 } from './dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -89,5 +90,21 @@ export class AuthController {
     @ApiOperation({ summary: 'Reset password with token' })
     async resetPassword(@Body() dto: ResetPasswordDto) {
         return this.authService.resetPassword(dto.token, dto.password);
+    }
+
+    @Post('verify-email')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Verify email with token' })
+    async verifyEmail(@Body() dto: VerifyEmailDto) {
+        return this.authService.verifyEmail(dto.token);
+    }
+
+    @Post('resend-verification')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth()
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Resend email verification link' })
+    async resendVerification(@CurrentUser('id') userId: string) {
+        return this.authService.resendVerification(userId);
     }
 }

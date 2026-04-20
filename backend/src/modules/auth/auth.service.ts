@@ -26,6 +26,10 @@ export class AuthService {
     ) { }
 
     async register(dto: RegisterDto) {
+        if (dto.confirmPassword !== undefined && dto.confirmPassword !== dto.password) {
+            throw new BadRequestException('Passwords do not match');
+        }
+
         const existing = await this.prisma.user.findUnique({
             where: { email: dto.email.toLowerCase() },
         });
@@ -47,6 +51,13 @@ export class AuthService {
             },
         });
 
+        // Fire-and-forget email verification token generation
+        try {
+            await this.createVerificationToken(user.email);
+        } catch {
+            /* non-fatal */
+        }
+
         const tokens = await this.generateTokens(user.id, user.email, user.role);
 
         return {
@@ -55,6 +66,7 @@ export class AuthService {
                 email: user.email,
                 name: user.name,
                 role: user.role,
+                emailVerified: user.emailVerified,
             },
             ...tokens,
         };
@@ -145,9 +157,24 @@ export class AuthService {
     }
 
     async updateProfile(userId: string, dto: UpdateProfileDto) {
+        const data: any = { ...dto };
+        if (dto.email) {
+            const normalized = dto.email.toLowerCase();
+            const existing = await this.prisma.user.findUnique({ where: { email: normalized } });
+            if (existing && existing.id !== userId) {
+                throw new ConflictException('Email already in use');
+            }
+            data.email = normalized;
+            // Email change → require re-verification
+            data.emailVerified = null;
+            try {
+                await this.createVerificationToken(normalized);
+            } catch { /* non-fatal */ }
+        }
+
         return this.prisma.user.update({
             where: { id: userId },
-            data: dto,
+            data,
             select: {
                 id: true,
                 email: true,
@@ -159,6 +186,7 @@ export class AuthService {
                 designation: true,
                 country: true,
                 state: true,
+                emailVerified: true,
             },
         });
     }
@@ -239,6 +267,58 @@ export class AuthService {
         ]);
 
         return { message: 'Password reset successfully' };
+    }
+
+    /**
+     * Create an email verification token (24h expiry).
+     * In production this should also send an email via SMTP/Resend.
+     * For now we log it in development.
+     */
+    async createVerificationToken(email: string) {
+        const normalized = email.toLowerCase();
+        const token = uuidv4();
+        const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+
+        // Remove any existing tokens for this identifier
+        await this.prisma.verificationToken.deleteMany({ where: { identifier: normalized } });
+
+        await this.prisma.verificationToken.create({
+            data: { identifier: normalized, token, expires },
+        });
+
+        if (this.configService.get('NODE_ENV') !== 'production') {
+            // eslint-disable-next-line no-console
+            console.log(`[verify-email] ${normalized} → token: ${token}`);
+        }
+
+        // TODO: integrate SMTP/Resend
+        return { message: 'Verification email sent' };
+    }
+
+    async resendVerification(userId: string) {
+        const user = await this.prisma.user.findUnique({ where: { id: userId } });
+        if (!user) throw new NotFoundException('User not found');
+        if (user.emailVerified) {
+            return { message: 'Email is already verified' };
+        }
+        return this.createVerificationToken(user.email);
+    }
+
+    async verifyEmail(token: string) {
+        const record = await this.prisma.verificationToken.findUnique({ where: { token } });
+        if (!record || record.expires < new Date()) {
+            throw new BadRequestException('Invalid or expired verification token');
+        }
+
+        await this.prisma.$transaction([
+            this.prisma.user.update({
+                where: { email: record.identifier },
+                data: { emailVerified: new Date() },
+            }),
+            this.prisma.verificationToken.delete({ where: { token } }),
+        ]);
+
+        return { message: 'Email verified successfully' };
     }
 
     private async generateTokens(userId: string, email: string, role: string) {

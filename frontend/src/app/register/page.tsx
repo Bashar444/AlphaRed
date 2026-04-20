@@ -42,10 +42,12 @@ export default function RegisterPage() {
         name: "",
         email: "",
         password: "",
+        confirmPassword: "",
         organization: "",
         phone: "",
     });
     const [showPassword, setShowPassword] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -56,6 +58,10 @@ export default function RegisterPage() {
         e.preventDefault();
         if (!accountType) return;
         setError("");
+        if (form.password !== form.confirmPassword) {
+            setError("Passwords do not match");
+            return;
+        }
         setLoading(true);
         try {
             const payload: Record<string, unknown> = {
@@ -304,6 +310,36 @@ export default function RegisterPage() {
                                             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                         </button>
                                     </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                                        Confirm Password
+                                    </label>
+                                    <div className="relative">
+                                        <input
+                                            type={showConfirm ? "text" : "password"}
+                                            required
+                                            minLength={8}
+                                            value={form.confirmPassword}
+                                            onChange={(e) => set("confirmPassword", e.target.value)}
+                                            className={`w-full h-11 px-3 pr-10 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:border-transparent ${form.confirmPassword && form.password !== form.confirmPassword
+                                                ? "border-red-300 focus:ring-red-500"
+                                                : "border-slate-300 focus:ring-violet-500"
+                                                }`}
+                                            placeholder="Re-enter your password"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowConfirm(!showConfirm)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                        >
+                                            {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                        </button>
+                                    </div>
+                                    {form.confirmPassword && form.password !== form.confirmPassword && (
+                                        <p className="text-xs text-red-600 mt-1">Passwords do not match</p>
+                                    )}
                                 </div>
 
                                 {/* Role-specific fields */}

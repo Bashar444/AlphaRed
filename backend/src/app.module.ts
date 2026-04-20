@@ -20,6 +20,7 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { RespondentsModule } from './modules/respondents/respondents.module';
 import { InvitationsModule } from './modules/invitations/invitations.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { ApiAccessRequestsModule } from './modules/api-access-requests/api-access-requests.module';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { AdminModule } from './modules/admin/admin.module';
     RespondentsModule,
     InvitationsModule,
     AdminModule,
+    ApiAccessRequestsModule,
   ],
 })
 export class AppModule { }
