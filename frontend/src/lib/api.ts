@@ -154,6 +154,40 @@ export const publicApi = {
     submitSurvey: (id: number, data: Record<string, unknown>) => request("POST", `/public/surveys/${id}/submit`, data),
 };
 
+// ── Admin Settings (key/value KV store) ───────────────────────
+export const adminSettings = {
+    list: (group?: string) => {
+        const qs = group ? `?group=${encodeURIComponent(group)}` : "";
+        return request<Array<{ key: string; value: unknown; group: string; label?: string }>>(
+            "GET",
+            `/admin/settings${qs}`
+        );
+    },
+    get: (key: string) => request("GET", `/admin/settings/${encodeURIComponent(key)}`),
+    upsert: (key: string, value: unknown, group: string, label?: string) =>
+        request("POST", "/admin/settings", { key, value, group, label }),
+    upsertMany: async (group: string, kv: Record<string, unknown>) => {
+        const ops = Object.entries(kv).map(([key, value]) =>
+            request("POST", "/admin/settings", { key, value, group })
+        );
+        return Promise.all(ops);
+    },
+    remove: (key: string) => request("DELETE", `/admin/settings/${encodeURIComponent(key)}`),
+};
+
+// ── API Access Requests ───────────────────────────────────────
+export const apiAccessRequests = {
+    create: (reason: string, useCase: string) =>
+        request("POST", "/api-access-requests", { reason, useCase }),
+    listMine: () => request("GET", "/api-access-requests/mine"),
+    listAll: (status?: string) => {
+        const qs = status ? `?status=${status}` : "";
+        return request("GET", `/api-access-requests${qs}`);
+    },
+    review: (id: string, status: "APPROVED" | "REJECTED", adminNotes?: string) =>
+        request("PATCH", `/api-access-requests/${id}/review`, { status, adminNotes }),
+};
+
 // ── Admin Users ─────────────────────────────────
 export const adminUsers = {
     list: (params?: Record<string, string>) => {
@@ -357,6 +391,8 @@ export const api = {
     adminSubscriptions,
     admin,
     adminUsers,
+    adminSettings,
+    apiAccessRequests,
     apiKeys,
     adminCms,
     publicCms,
