@@ -38,6 +38,7 @@ import {
     Globe,
     Activity,
     TrendingUp,
+    Bell,
 } from "lucide-react";
 
 /* ── Navigation definitions per role ─────────────────────── */
@@ -47,7 +48,8 @@ const researcherNav = [
     { href: "/dashboard/surveys", label: "My Surveys", icon: ClipboardList },
     { href: "/dashboard/analysis", label: "Analysis", icon: BarChart3 },
     { href: "/dashboard/exports", label: "Exports", icon: Download },
-    { href: "/dashboard/subscription", label: "Subscription", icon: CreditCard },
+    { href: "/dashboard/notifications", label: "Notifications", icon: Bell },
+    { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
     { href: "/dashboard/profile", label: "Profile", icon: User },
 ];
 

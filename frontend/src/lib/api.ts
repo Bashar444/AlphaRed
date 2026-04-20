@@ -125,6 +125,18 @@ export const adminSubscriptions = {
         request("POST", "/subscriptions/reject", { subscriptionId, reason }),
 };
 
+// ── Notifications ───────────────────────────────
+export const notifications = {
+    list: (unreadOnly = false) =>
+        request<Array<{ id: string; type: string; title: string; message: string; isRead: boolean; createdAt: string; link?: string }>>(
+            "GET", `/notifications${unreadOnly ? "?unreadOnly=true" : ""}`
+        ),
+    unreadCount: () => request<{ count: number }>("GET", "/notifications/unread-count"),
+    markRead: (id: string) => request("PATCH", `/notifications/${id}/read`),
+    markAllRead: () => request("PATCH", "/notifications/read-all"),
+    remove: (id: string) => request("DELETE", `/notifications/${id}`),
+};
+
 // ── Admin ───────────────────────────────────────
 export const admin = {
     dashboard: () => request("GET", "/dashboard/admin"),
@@ -466,6 +478,7 @@ export const api = {
     publicCms,
     auditLogs,
     payments,
+    notifications,
     public: publicApi,
     respondent,
     projects,
