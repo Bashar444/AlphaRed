@@ -9,23 +9,56 @@ export class RazorpayService {
     private rzp: Razorpay | null = null;
     private keyId: string = '';
     private keySecret: string = '';
+    private webhookSecret: string = '';
+    private cachedAt = 0;
+    private readonly cacheTtlMs = 60_000;
 
     constructor(
         private config: ConfigService,
         private prisma: PrismaService,
-    ) {
-        const key = this.config.get<string>('RAZORPAY_KEY_ID');
-        const secret = this.config.get<string>('RAZORPAY_KEY_SECRET');
-        if (key && secret) {
+    ) { }
+
+    invalidateCache() {
+        this.rzp = null;
+        this.cachedAt = 0;
+    }
+
+    private async loadCreds(): Promise<boolean> {
+        if (this.rzp && Date.now() - this.cachedAt < this.cacheTtlMs) return true;
+
+        const rows = await this.prisma.appSetting.findMany({ where: { group: 'payment' } });
+        const map: Record<string, unknown> = {};
+        for (const r of rows) map[r.key] = r.value;
+
+        const enabled = map.razorpay_enabled === undefined ? true : Boolean(map.razorpay_enabled);
+        if (!enabled) {
+            this.rzp = null;
+            return false;
+        }
+
+        const key = (map.razorpay_key_id as string) || this.config.get<string>('RAZORPAY_KEY_ID') || '';
+        const secret = (map.razorpay_key_secret as string) || this.config.get<string>('RAZORPAY_KEY_SECRET') || '';
+        const webhook = (map.razorpay_webhook_secret as string) || this.config.get<string>('RAZORPAY_WEBHOOK_SECRET') || '';
+
+        if (!key || !secret) {
+            this.rzp = null;
+            return false;
+        }
+
+        if (!this.rzp || this.keyId !== key || this.keySecret !== secret) {
             this.rzp = new Razorpay({ key_id: key, key_secret: secret });
             this.keyId = key;
             this.keySecret = secret;
         }
+        this.webhookSecret = webhook;
+        this.cachedAt = Date.now();
+        return true;
     }
 
-    private ensureConfigured(): Razorpay {
-        if (!this.rzp) {
-            throw new BadRequestException('Razorpay is not configured. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET.');
+    private async ensureConfigured(): Promise<Razorpay> {
+        const ok = await this.loadCreds();
+        if (!ok || !this.rzp) {
+            throw new BadRequestException('Razorpay is not configured. Enable & set credentials in Admin → Payment Gateways.');
         }
         return this.rzp;
     }
@@ -38,7 +71,7 @@ export class RazorpayService {
         amount: number;
         currency: string;
     }): Promise<{ orderId: string; amount: number; currency: string; keyId: string }> {
-        const rzp = this.ensureConfigured();
+        const rzp = await this.ensureConfigured();
 
         const order = await rzp.orders.create({
             amount: Math.round(params.amount * 100), // Razorpay uses paise
@@ -77,7 +110,7 @@ export class RazorpayService {
         razorpay_payment_id: string;
         razorpay_signature: string;
     }): Promise<{ success: boolean }> {
-        this.ensureConfigured();
+        await this.ensureConfigured();
 
         // Verify signature
         const body = params.razorpay_order_id + '|' + params.razorpay_payment_id;
@@ -141,9 +174,9 @@ export class RazorpayService {
 
     /** Handle Razorpay webhook event */
     async handleWebhook(body: any, signature: string): Promise<{ handled: boolean; event: string }> {
-        this.ensureConfigured();
+        await this.ensureConfigured();
 
-        const webhookSecret = this.config.get<string>('RAZORPAY_WEBHOOK_SECRET');
+        const webhookSecret = this.webhookSecret;
         if (!webhookSecret) throw new BadRequestException('Razorpay webhook secret not configured');
 
         // Verify webhook signature
@@ -245,7 +278,7 @@ export class RazorpayService {
 
     /** Initiate refund for a Razorpay payment */
     async refund(paymentId: string, amount?: number): Promise<any> {
-        const rzp = this.ensureConfigured();
+        const rzp = await this.ensureConfigured();
 
         const payment = await this.prisma.payment.findUnique({ where: { id: paymentId } });
         if (!payment || payment.gateway !== 'RAZORPAY' || !payment.gatewayPayId) {

@@ -175,6 +175,22 @@ export const adminSettings = {
     remove: (key: string) => request("DELETE", `/admin/settings/${encodeURIComponent(key)}`),
     sendTestEmail: () =>
         request<{ ok: boolean; sentTo?: string; message: string }>("POST", "/admin/email/test"),
+    uploadFile: async (file: File): Promise<{ url: string; fileName: string; mimeType: string; sizeKb: number }> => {
+        const fd = new FormData();
+        fd.append("file", file);
+        const token = typeof window !== "undefined" ? localStorage.getItem("primo_token") : null;
+        const res = await fetch(`${API_BASE}/admin/media/upload`, {
+            method: "POST",
+            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+            body: fd,
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            const msg = (json?.message || json?.error || `Upload failed (${res.status})`) as string;
+            throw new Error(msg);
+        }
+        return json.data ?? json;
+    },
 };
 
 // ── API Access Requests ───────────────────────────────────────

@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { api } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle2, AlertCircle, Save, Loader2 } from "lucide-react";
+import { CheckCircle2, AlertCircle, Save, Loader2, Upload, X } from "lucide-react";
 
-export type FieldType = "text" | "email" | "password" | "number" | "url" | "textarea" | "boolean" | "select";
+export type FieldType = "text" | "email" | "password" | "number" | "url" | "textarea" | "boolean" | "select" | "image";
 
 export interface SettingField {
     key: string;
@@ -199,7 +199,9 @@ function FieldRenderer({
                 {field.label}
                 {field.required && <span className="text-red-500 ml-0.5">*</span>}
             </label>
-            {field.type === "textarea" ? (
+            {field.type === "image" ? (
+                <ImageField value={String(value ?? "")} onChange={(v) => onChange(v)} />
+            ) : field.type === "textarea" ? (
                 <textarea
                     rows={4}
                     value={String(value ?? "")}
@@ -232,6 +234,84 @@ function FieldRenderer({
                 />
             )}
             {field.helper && <p className="text-xs text-slate-500 mt-1">{field.helper}</p>}
+        </div>
+    );
+}
+
+function ImageField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+    const inputRef = useRef<HTMLInputElement>(null);
+    const [busy, setBusy] = useState(false);
+    const [err, setErr] = useState<string | null>(null);
+
+    async function handleFile(file: File) {
+        setBusy(true);
+        setErr(null);
+        try {
+            const res = await api.adminSettings.uploadFile(file);
+            onChange(res.url);
+        } catch (e) {
+            setErr(e instanceof Error ? e.message : "Upload failed");
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    return (
+        <div className="space-y-2">
+            <div className="flex items-center gap-3">
+                {value ? (
+                    <div className="relative">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                            src={value}
+                            alt="preview"
+                            className="h-16 w-16 object-contain rounded-lg border border-slate-200 bg-slate-50 p-1"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => onChange("")}
+                            className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-red-600 shadow-sm"
+                            aria-label="Remove image"
+                        >
+                            <X className="w-3 h-3" />
+                        </button>
+                    </div>
+                ) : (
+                    <div className="h-16 w-16 rounded-lg border border-dashed border-slate-300 bg-slate-50 flex items-center justify-center text-slate-400 text-xs">
+                        none
+                    </div>
+                )}
+                <div className="flex-1 space-y-2">
+                    <input
+                        ref={inputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) void handleFile(f);
+                            e.target.value = "";
+                        }}
+                    />
+                    <button
+                        type="button"
+                        onClick={() => inputRef.current?.click()}
+                        disabled={busy}
+                        className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-slate-200 hover:bg-slate-50 text-sm font-medium text-slate-700 disabled:opacity-50"
+                    >
+                        {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                        {busy ? "Uploading…" : value ? "Replace image" : "Upload image"}
+                    </button>
+                    <input
+                        type="url"
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                        placeholder="…or paste an image URL"
+                        className="w-full h-9 px-3 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    />
+                </div>
+            </div>
+            {err && <p className="text-xs text-red-600">{err}</p>}
         </div>
     );
 }

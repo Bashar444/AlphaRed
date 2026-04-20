@@ -1,7 +1,11 @@
 import {
-    Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, UseGuards,
+    Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, UseGuards, UploadedFile, UseInterceptors, Req, BadRequestException,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery, ApiConsumes, ApiBody } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname, join } from 'path';
+import { randomBytes } from 'crypto';
 import { AdminService } from './admin.service';
 import { MailerService } from '../mailer/mailer.service';
 import {
@@ -190,6 +194,50 @@ export class AdminController {
         @CurrentUser('sub') userId: string,
     ) {
         return this.service.createMediaRecord({ ...body, uploadedBy: userId });
+    }
+
+    @Post('media/upload')
+    @ApiOperation({ summary: 'Upload a file (logo, image, etc.) and register it' })
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({ schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } } })
+    @UseInterceptors(
+        FileInterceptor('file', {
+            storage: diskStorage({
+                destination: join(process.cwd(), 'uploads'),
+                filename: (_req, file, cb) => {
+                    const ext = extname(file.originalname || '').toLowerCase();
+                    const id = randomBytes(12).toString('hex');
+                    cb(null, `${id}${ext}`);
+                },
+            }),
+            limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+            fileFilter: (_req, file, cb) => {
+                const allowed = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/svg+xml', 'image/webp', 'image/x-icon', 'image/vnd.microsoft.icon'];
+                if (!allowed.includes(file.mimetype)) {
+                    return cb(new BadRequestException('Only image files are allowed (png, jpg, gif, svg, webp, ico)'), false);
+                }
+                cb(null, true);
+            },
+        }),
+    )
+    async uploadMedia(
+        @UploadedFile() file: Express.Multer.File,
+        @CurrentUser('sub') userId: string,
+        @Req() req: { protocol: string; get: (h: string) => string | undefined },
+    ) {
+        if (!file) throw new BadRequestException('No file uploaded');
+        const host = req.get('host');
+        const proto = req.get('x-forwarded-proto') || req.protocol || 'http';
+        const url = `${proto}://${host}/uploads/${file.filename}`;
+        const sizeKb = Math.round(file.size / 1024);
+        await this.service.createMediaRecord({
+            fileName: file.originalname || file.filename,
+            fileUrl: url,
+            mimeType: file.mimetype,
+            sizeKb,
+            uploadedBy: userId,
+        });
+        return { url, fileName: file.filename, mimeType: file.mimetype, sizeKb };
     }
 
     @Delete('media/:id')

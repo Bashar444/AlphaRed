@@ -22,6 +22,7 @@ import { InvitationsModule } from './modules/invitations/invitations.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { ApiAccessRequestsModule } from './modules/api-access-requests/api-access-requests.module';
 import { MailerModule } from './modules/mailer/mailer.module';
+import { PublicModule } from './modules/public/public.module';
 
 @Module({
   imports: [
@@ -71,6 +72,7 @@ import { MailerModule } from './modules/mailer/mailer.module';
     AdminModule,
     ApiAccessRequestsModule,
     MailerModule,
+    PublicModule,
   ],
 })
 export class AppModule { }

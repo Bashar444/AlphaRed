@@ -9,28 +9,53 @@ const StripeLib = require('stripe');
 @Injectable()
 export class StripeService {
     private stripe: any;
+    private cached: { secretKey: string; webhookSecret: string; loadedAt: number } | null = null;
+    private readonly cacheTtlMs = 60_000;
 
     constructor(
         private config: ConfigService,
         private prisma: PrismaService,
-    ) {
-        const key = this.config.get<string>('STRIPE_SECRET_KEY');
-        if (!key) {
-            this.stripe = null;
-        } else {
-            this.stripe = new StripeLib(key);
-        }
+    ) { }
+
+    invalidateCache() {
+        this.cached = null;
+        this.stripe = null;
     }
 
-    private ensureConfigured() {
-        if (!this.stripe) {
-            throw new BadRequestException('Stripe is not configured. Set STRIPE_SECRET_KEY.');
+    /** Load Stripe credentials from AppSetting (group=payment) with env fallback. */
+    private async loadCreds(): Promise<{ secretKey: string; webhookSecret: string } | null> {
+        if (this.cached && Date.now() - this.cached.loadedAt < this.cacheTtlMs) {
+            return { secretKey: this.cached.secretKey, webhookSecret: this.cached.webhookSecret };
         }
+        const rows = await this.prisma.appSetting.findMany({ where: { group: 'payment' } });
+        const map: Record<string, unknown> = {};
+        for (const r of rows) map[r.key] = r.value;
+
+        const enabled = map.stripe_enabled === undefined ? true : Boolean(map.stripe_enabled);
+        if (!enabled) return null;
+
+        const secretKey = (map.stripe_secret_key as string) || this.config.get<string>('STRIPE_SECRET_KEY') || '';
+        const webhookSecret = (map.stripe_webhook_secret as string) || this.config.get<string>('STRIPE_WEBHOOK_SECRET') || '';
+        if (!secretKey) return null;
+
+        this.cached = { secretKey, webhookSecret, loadedAt: Date.now() };
+        return { secretKey, webhookSecret };
+    }
+
+    private async ensureConfigured() {
+        const creds = await this.loadCreds();
+        if (!creds) {
+            throw new BadRequestException('Stripe is not configured. Enable & set credentials in Admin → Payment Gateways.');
+        }
+        if (!this.stripe || this.cached?.secretKey !== creds.secretKey) {
+            this.stripe = new StripeLib(creds.secretKey);
+        }
+        return creds;
     }
 
     /** Create or retrieve a Stripe customer for the user */
     async getOrCreateCustomer(userId: string): Promise<string> {
-        this.ensureConfigured();
+        await this.ensureConfigured();
 
         const sub = await this.prisma.subscription.findUnique({ where: { userId } });
         if (sub?.stripeCustomerId) return sub.stripeCustomerId;
@@ -66,7 +91,7 @@ export class StripeService {
         successUrl: string;
         cancelUrl: string;
     }): Promise<{ sessionId: string; url: string }> {
-        this.ensureConfigured();
+        await this.ensureConfigured();
 
         const customerId = await this.getOrCreateCustomer(params.userId);
 
@@ -113,9 +138,9 @@ export class StripeService {
 
     /** Handle Stripe webhook event */
     async handleWebhookEvent(payload: Buffer, signature: string): Promise<{ handled: boolean; event: string }> {
-        this.ensureConfigured();
+        const creds = await this.ensureConfigured();
 
-        const webhookSecret = this.config.get<string>('STRIPE_WEBHOOK_SECRET');
+        const webhookSecret = creds.webhookSecret;
         if (!webhookSecret) throw new BadRequestException('Stripe webhook secret not configured');
 
         let event: any;
@@ -228,7 +253,7 @@ export class StripeService {
 
     /** Initiate a refund for a Stripe payment */
     async refund(paymentId: string, amount?: number): Promise<any> {
-        this.ensureConfigured();
+        await this.ensureConfigured();
 
         const payment = await this.prisma.payment.findUnique({ where: { id: paymentId } });
         if (!payment || payment.gateway !== 'STRIPE' || !payment.gatewayPayId) {

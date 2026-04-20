@@ -24,7 +24,7 @@ export default function SeoConfigPage() {
                     title: "Open Graph / Social",
                     description: "Used by Facebook, LinkedIn, Twitter, etc.",
                     fields: [
-                        { key: "og_image", label: "Default OG Image URL", type: "url", placeholder: "https://primodata.com/og.png", helper: "Recommended size: 1200×630" },
+                        { key: "og_image", label: "Default OG Image", type: "image", helper: "Used by Facebook/LinkedIn/Twitter previews. Recommended size: 1200×630." },
                         { key: "og_site_name", label: "Site Name", type: "text", placeholder: "PrimoData" },
                         { key: "twitter_handle", label: "Twitter Handle", type: "text", placeholder: "@primodata" },
                     ],

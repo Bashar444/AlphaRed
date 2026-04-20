@@ -16,8 +16,8 @@ export default function SystemSettingsPage() {
                     fields: [
                         { key: "system_site_name", label: "Site Name", type: "text", placeholder: "PrimoData" },
                         { key: "system_tagline", label: "Tagline", type: "text", placeholder: "Survey & Analytics Platform" },
-                        { key: "system_logo_url", label: "Logo URL", type: "url", placeholder: "https://primodata.com/logo.svg", helper: "Used in the navbar and emails." },
-                        { key: "system_favicon_url", label: "Favicon URL", type: "url", placeholder: "https://primodata.com/favicon.ico" },
+                        { key: "system_logo_url", label: "Logo", type: "image", helper: "Used in the navbar and emails. PNG/SVG recommended." },
+                        { key: "system_favicon_url", label: "Favicon", type: "image", helper: "Square ICO or PNG, 32×32 minimum." },
                         { key: "system_primary_color", label: "Primary Color (hex)", type: "text", placeholder: "#7C3AED", helper: "Used for buttons and accents." },
                         {
                             key: "system_theme",
