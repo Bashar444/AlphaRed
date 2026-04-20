@@ -223,12 +223,10 @@ export class AdminController {
     async uploadMedia(
         @UploadedFile() file: Express.Multer.File,
         @CurrentUser('sub') userId: string,
-        @Req() req: { protocol: string; get: (h: string) => string | undefined },
     ) {
         if (!file) throw new BadRequestException('No file uploaded');
-        const host = req.get('host');
-        const proto = req.get('x-forwarded-proto') || req.protocol || 'http';
-        const url = `${proto}://${host}/uploads/${file.filename}`;
+        // Return a relative URL so it works behind any proxy (Vercel rewrite, nginx, direct).
+        const url = `/uploads/${file.filename}`;
         const sizeKb = Math.round(file.size / 1024);
         await this.service.createMediaRecord({
             fileName: file.originalname || file.filename,
