@@ -16,6 +16,7 @@ import {
     Eye,
     BarChart3,
     Copy,
+    Sparkles,
 } from "lucide-react";
 
 interface Survey {
@@ -110,10 +111,18 @@ export default function SurveysPage() {
                         Manage and create your surveys
                     </p>
                 </div>
-                <Button onClick={handleCreate} disabled={creating}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    {creating ? "Creating..." : "New Survey"}
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Link href="/dashboard/surveys/templates">
+                        <Button variant="outline">
+                            <Sparkles className="w-4 h-4 mr-2" />
+                            Templates
+                        </Button>
+                    </Link>
+                    <Button onClick={handleCreate} disabled={creating}>
+                        <Plus className="w-4 h-4 mr-2" />
+                        {creating ? "Creating..." : "New Survey"}
+                    </Button>
+                </div>
             </div>
 
             {/* Search */}

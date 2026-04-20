@@ -11,7 +11,41 @@ import { CreateSurveyDto, UpdateSurveyDto, QuestionItemDto } from './dto';
 export class SurveysService {
     constructor(private prisma: PrismaService) { }
 
+    private async getPlanLimits(userId: string): Promise<{ maxSurveys: number; maxResponses: number; maxQuestions: number }> {
+        const sub = await this.prisma.subscription.findUnique({
+            where: { userId },
+            include: { plan: true },
+        });
+        let plan = sub?.plan;
+        if (!plan || !sub || !['ACTIVE', 'TRIALING'].includes(sub.status)) {
+            plan = (await this.prisma.plan.findFirst({ where: { slug: 'free' } })) || null as any;
+        }
+        return {
+            maxSurveys: plan?.maxSurveys ?? 1,
+            maxResponses: plan?.maxResponses ?? 50,
+            maxQuestions: plan?.maxQuestions ?? 10,
+        };
+    }
+
+    private async assertCanCreateSurvey(userId: string) {
+        const limits = await this.getPlanLimits(userId);
+        if (limits.maxSurveys <= 0) return;
+        const used = await this.prisma.survey.count({ where: { userId, status: { not: 'ARCHIVED' } } });
+        if (used >= limits.maxSurveys) {
+            throw new ForbiddenException(`Plan limit reached: ${limits.maxSurveys} survey(s). Upgrade your plan to create more.`);
+        }
+    }
+
+    private async assertCanAddQuestions(userId: string, count: number) {
+        const limits = await this.getPlanLimits(userId);
+        if (limits.maxQuestions <= 0) return;
+        if (count > limits.maxQuestions) {
+            throw new ForbiddenException(`Plan limit reached: ${limits.maxQuestions} question(s) per survey. Upgrade to add more.`);
+        }
+    }
+
     async create(userId: string, dto: CreateSurveyDto) {
+        await this.assertCanCreateSurvey(userId);
         return this.prisma.survey.create({
             data: {
                 ...dto,
@@ -157,6 +191,7 @@ export class SurveysService {
         if (survey.status !== 'DRAFT') {
             throw new BadRequestException('Can only edit questions in DRAFT status');
         }
+        await this.assertCanAddQuestions(userId, questions.length);
 
         // Delete existing questions and recreate (transactional)
         await this.prisma.$transaction(async (tx) => {
@@ -254,6 +289,7 @@ export class SurveysService {
         });
         if (!original) throw new NotFoundException('Survey not found');
         if (original.userId !== userId) throw new ForbiddenException('Cannot duplicate another user\'s survey');
+        await this.assertCanCreateSurvey(userId);
 
         const copy = await this.prisma.survey.create({
             data: {

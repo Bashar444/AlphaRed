@@ -23,6 +23,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { ApiAccessRequestsModule } from './modules/api-access-requests/api-access-requests.module';
 import { MailerModule } from './modules/mailer/mailer.module';
 import { PublicModule } from './modules/public/public.module';
+import { TemplatesModule } from './modules/templates/templates.module';
 
 @Module({
   imports: [
@@ -73,6 +74,7 @@ import { PublicModule } from './modules/public/public.module';
     ApiAccessRequestsModule,
     MailerModule,
     PublicModule,
+    TemplatesModule,
   ],
 })
 export class AppModule { }

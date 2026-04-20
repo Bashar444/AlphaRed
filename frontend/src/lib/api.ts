@@ -549,6 +549,24 @@ export const settings = {
 
 export const roles = crudModule("/roles");
 
+export interface SurveyTemplateListItem {
+    id: string;
+    title: string;
+    description: string;
+    category: string;
+    estimatedMinutes: number;
+    tags: string[];
+    icon: string;
+    questionCount: number;
+}
+
+export const templates = {
+    list: (category?: string) => request<SurveyTemplateListItem[]>("GET", `/templates${category ? `?category=${encodeURIComponent(category)}` : ""}`),
+    categories: () => request<string[]>("GET", "/templates/categories"),
+    get: (id: string) => request<SurveyTemplateListItem & { questions: Record<string, unknown>[] }>("GET", `/templates/${id}`),
+    use: (id: string) => request<{ id: string }>("POST", `/templates/${id}/use`),
+};
+
 // Unified api object for convenient imports: import { api } from "@/lib/api"
 export const api = {
     auth,
@@ -595,4 +613,5 @@ export const api = {
     reports,
     settings,
     roles,
+    templates,
 };
